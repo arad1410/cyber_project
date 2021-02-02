@@ -42,26 +42,13 @@ class HomePage(wx.Panel):
         wx.Panel.__init__(self, parent)
         self.SetSize((800, 600))
         self.user_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.search = wx.Button(self, label="search files", pos=(600, 400))
-        self.upload = wx.Button(self, label="upload files", pos=(100, 400))
         self.user = wx.TextCtrl(self, pos=(325, 100))
         self.connect = wx.Button(self, label="Start working", pos=(340, 130))
-        self.file_name = wx.Button(self, label="upload file name", pos=(100, 450))
         self.path = None
 
     def print_name(self, name):
         font = wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
         wx.StaticText(self, -1, "hello " + name + " enter user name to work with", (200, 10), ).SetFont(font)
-
-    def upload_file(self):  # opens the file explore and lets you choose a file to upload
-        self.path = None
-        dlg = wx.FileDialog(
-            self, message="Choose a file",
-            style=wx.FD_OPEN | wx.FD_MULTIPLE | wx.FD_CHANGE_DIR
-        )
-        if dlg.ShowModal() == wx.ID_OK:
-            self.path = dlg.GetPaths()
-        dlg.Destroy()
 
 
 class TopPanel(wx.Panel):
@@ -83,11 +70,10 @@ class TopPanel(wx.Panel):
                 self.my_file.AppendText(my_line + "\n")
                 self.other_file.AppendText(other_line + "\n")
             else:
-                self.other_file.SetStyle(0, -1, wx.TextAttr(wx.RED))
+                self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLUE))
                 self.my_file.AppendText(my_line + "\n")
                 self.other_file.AppendText(other_line + "\n")
                 self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
-                print("aaaaaa")
 
 
 class Window2(wx.Frame):
@@ -184,66 +170,6 @@ class Template(wx.Panel):
         e.Skip()
 
 
-class SearchPage(wx.Panel):
-
-    # in charge of the files page has all the files and file name for display for the user to choose the file he
-    # wants to download
-    def __init__(self, parent, client):
-        wx.Panel.__init__(self, parent)
-        self.SetSize((800, 600))
-        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.go_back = wx.Button(self, label="go back to home page", pos=(10, 10))
-        self.buttons = []
-        self.client = client
-        self.answer = ""
-        self.button_name = None
-        self.button_label = None
-        self.name = None
-
-    def make_buttons(self, files):
-        x = 0
-        print(files)
-        for file in files:
-            x = x + 50
-            self.buttons.append(
-                wx.Button(self, label=file, name=files[file]["ip"] + " " + files[file]["user_name"], pos=(300, x)))
-            # creates all the buttons and sets there label to be the file name and directory and sets there name to
-            # be or the pear to pear plus the clients name or 0 so for when i press a file i will know if im getting
-            # the file from the server or a different client
-        for button in self.buttons:
-            self.build_buttons(button)
-
-    def build_buttons(self, btn):
-        btn.Bind(wx.EVT_BUTTON, self.on_button)
-
-    def on_button(self, event):
-        button = event.GetEventObject()
-        self.button_label = button.GetLabel()
-        self.button_name = button.GetName()
-        if "0" in self.button_name:  # if 0 is in the button name so the clients gets the file from the server
-            msg = {"action": "fs", "file_name": self.button_label}  # create the msg that tells the server to send
-            # the file over
-            self.client.send_message(msg)
-            self.client.answer = None
-            while not self.client.answer:  # waits until a message from the server has return
-                pass
-            print_answer("file received check your " + str(os.getcwd()) + "directory")
-        else:
-            msg = {"action": "sr", "file_name": self.button_label,
-                   "user_name": self.button_name.split(" ")[-1]}  # creates the message to send to the server to tell
-            # this client which fie i want to download to send me his file
-            self.client.answer = None
-            self.client.send_message(msg)
-            while not self.client.answer:
-                pass
-            if self.client.answer == "asked the client":  # checks if the server has told the client to send me his
-                # files
-                ProjectClientAndServer.Client("127.0.0.1")  # starts the client for the pear to pear connection
-                print_answer("file received check your " + str(os.getcwd()) + "directory")
-            else:
-                print_answer("user not found")
-
-
 class SignUp(wx.Panel):
     # in charge of thr sing up page for new clients gets all their details to start there new client
     def __init__(self, parent):
@@ -303,8 +229,6 @@ class Program(wx.Frame):
         self.template.Hide()
         self.panel_three = SignUp(self)
         self.panel_three.Hide()
-        self.search_page = SearchPage(self, self.client)
-        self.search_page.Hide()
         self.sizer.Add(self.panel_one.main_sizer, 1, wx.EXPAND)
         self.panel_one.btn2.Bind(wx.EVT_BUTTON, self.show_panel_three)  # after creating the panels it check if the
         # buttons at the panel was pressed and if was it will go the the function to show the correct panel
@@ -312,14 +236,9 @@ class Program(wx.Frame):
         self.panel_one.btn.Bind(wx.EVT_BUTTON, self.show_panel_two)
         self.panel_three.btn.Bind(wx.EVT_BUTTON, self.show_home_page)
         self.sizer.Add(self.home_page.user_sizer, 1, wx.EXPAND)
-        self.home_page.upload.Bind(wx.EVT_BUTTON, self.upload_file)
         if self.template.dlg:
             self.new_frame()
-        self.home_page.file_name.Bind(wx.EVT_BUTTON, self.upload_file_name)
         self.home_page.connect.Bind(wx.EVT_BUTTON, self.show_template)
-        self.home_page.search.Bind(wx.EVT_BUTTON, self.show_search_page)
-        self.search_page.go_back.Bind(wx.EVT_BUTTON, self.create_home_page)
-        self.sizer.Add(self.search_page.main_sizer, 1, wx.EXPAND)
         self.SetSize((800, 600))
         self.Centre()
 
@@ -399,50 +318,12 @@ class Program(wx.Frame):
             print_answer("missing password or username or name")
             self.panel_one.Refresh()
 
-    def show_search_page(self, event):
-        # shows the files panel and sends a message to the server to so it will get back the a list of all the files
-        self.home_page.Hide()
-        msg = {"action": "s"}
-        self.client.send_message(msg)
-        self.search_page.Show()
-        self.search_page.make_buttons(self.client.answer)  # creates a button for every file
-        self.Layout()
-
     def create_home_page(self, event):
         self.threads()
         self.panel_three.Hide()
-        self.search_page.Hide()
         self.panel_one.Hide()
         self.home_page.Show()
         self.Layout()
-
-    def upload_file(self, event):
-        # in charge of sending the server a message to upload the file with the file name and directory and then
-        # sends the file
-        self.home_page.upload_file()
-        if self.home_page.path:
-            file = "".join(self.home_page.path).replace(" ", "")
-            msg = {"action": "u", "file_name": file,
-                   "file_size": os.path.getsize(file), "ip": "0", "user_name": self.user_name}
-            self.client.send_message(msg)
-            self.client.send_file(file)
-            print_answer("file uploaded was successful")
-
-    def upload_file_name(self, event):
-        # in charge of sending the server a message with a file name that im willing to send to a different client
-        self.home_page.upload_file()
-        if self.home_page.path:
-            msg = {"action": "f", "user_name": self.user_name,
-                   "user_password": self.panel_one.password.Value,
-                   "file_name": "".join(self.home_page.path), "ip": "pear to pear"}
-            self.client.send_message(msg)
-            self.client.answer = None
-            while not self.client.answer:
-                pass
-            if self.client.answer == "no":
-                print_answer("file name taken change file name")
-            else:
-                print_answer("file name uploaded")
 
     def threads(self):
         self.recvThread = threading.Thread(target=self.rcv_message)

@@ -64,6 +64,43 @@ class HomePage(wx.Panel):
         dlg.Destroy()
 
 
+class TopPanel(wx.Panel):
+
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        main_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.my_file = wx.TextCtrl(self, style=wx.TE_MULTILINE| wx.TE_RICH)
+        self.other_file = wx.TextCtrl(self, style=wx.TE_MULTILINE| wx.TE_RICH)
+        main_sizer.Add(self.my_file, 1, wx.EXPAND)
+        main_sizer.Add(self.other_file, 1, wx.EXPAND)
+        self.SetSizer(main_sizer)
+
+    def write_file(self, my_file, other_file):
+        my_file = my_file.split("\n")
+        other_file = other_file.split("\n")
+        for my_line, other_line in zip(my_file, other_file):
+            if my_line == other_line:
+                self.my_file.AppendText(my_line + "\n")
+                self.other_file.AppendText(other_line + "\n")
+            else:
+                self.other_file.SetStyle(0, -1, wx.TextAttr(wx.RED))
+                self.my_file.AppendText(my_line + "\n")
+                self.other_file.AppendText(other_line + "\n")
+                self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
+                print("aaaaaa")
+
+
+class Window2(wx.Frame):
+    title = "new Window"
+
+    def __init__(self, parent):
+        wx.Frame.__init__(self, parent, -1, 'Window2', size=(1300, 600))
+        self.top_panel = TopPanel(self)
+
+    def write(self, my_file, other_file):
+        self.top_panel.write_file(my_file, other_file)
+
+
 class Template(wx.Panel):
 
     # in charge of the files page has all the files and file name for display for the user to choose the file he
@@ -81,6 +118,8 @@ class Template(wx.Panel):
         self.sync.Bind(wx.EVT_BUTTON, self.sync_files)
         self.file = None
         self.last_updated_file = None
+        self.dlg = False
+        self.frame = Window2(None)
 
     def send_file(self, path):
         self.file = path
@@ -107,40 +146,27 @@ class Template(wx.Panel):
 
     def write_changes(self):
         with open(self.client.file, "r")as f:
-            f2 = f.read().split("\n")
-        new_file = self.my_text.Value.split('\n')
-        counter = 0
-        d = difflib.Differ()
-        diff = d.compare(new_file, f2)
-        for line in diff:
-            if line[0] == "+" and "#" not in line:
-                print(counter)
-                print(line)
-                change = re.sub(r"^[+](\s+)", "", line)
-                print(new_file[counter - 1])
-                print(f2[counter - 1])
-                print(counter - 1)
-                new_file[counter - 1] += "#" + change
-            counter += 1
-        self.my_text.Clear()
-        self.my_text.write("\n".join(new_file))
+            f2 = f.read()
+        self.frame.Show()
+        self.frame.write(self.my_text.Value, f2)
+        print("hi")
 
     def rcv_messages(self):
         while True:
             request = self.client.rcv().decode()
             if request:
                 if request == "@sync":
-                    dlg = wx.MessageBox('want to sync your file?', 'TestDialog',
-                                        wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
-                    if dlg == wx.YES:
+                    self.dlg = wx.MessageBox('want to sync your file?', 'TestDialog',
+                                             wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+                    if self.dlg == wx.YES:
                         print("yes")
                         self.client.send("@yes sync".encode())
                         self.client.rcv_file()
                         self.write_changes()
-                        print("rcv")
                 if request == "@yes sync":
                     print("send")
                     self.client.send_file(self.last_updated_file)
+        print("arad")
 
     def rcv_file(self):
         self.client = ProjectClientAndServer.Client()
@@ -287,7 +313,8 @@ class Program(wx.Frame):
         self.panel_three.btn.Bind(wx.EVT_BUTTON, self.show_home_page)
         self.sizer.Add(self.home_page.user_sizer, 1, wx.EXPAND)
         self.home_page.upload.Bind(wx.EVT_BUTTON, self.upload_file)
-
+        if self.template.dlg:
+            self.new_frame()
         self.home_page.file_name.Bind(wx.EVT_BUTTON, self.upload_file_name)
         self.home_page.connect.Bind(wx.EVT_BUTTON, self.show_template)
         self.home_page.search.Bind(wx.EVT_BUTTON, self.show_search_page)
@@ -311,7 +338,6 @@ class Program(wx.Frame):
         wildcard = "TXT files (*.txt)|*.txt"
         dialog = wx.FileDialog(self, "Open Text Files", wildcard=wildcard,
                                style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
-
         if dialog.ShowModal() == wx.ID_CANCEL:
             return
 
@@ -327,11 +353,16 @@ class Program(wx.Frame):
             self.template.Show()
             self.template.send_file(path)
             self.template.open_file(path)
+            print("back")
 
     def start_to_work(self):
         self.home_page.Hide()
         self.template.Show()
         self.template.rcv_file()
+        print("back")
+
+    def new_frame(self):
+        print("aradddd")
 
     def show_panel_two(self, event):  # checks if got a user name and password the sends to to the server to check if
         # it is a correct password or user name if it is it will call the function in charge of showing the home page

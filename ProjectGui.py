@@ -3,6 +3,8 @@ import ProjectClient
 import os
 import threading
 import ProjectClientAndServer
+import wx.lib.scrolledpanel as scrolled
+import wx.richtext as rt
 import re
 import difflib
 
@@ -55,25 +57,47 @@ class TopPanel(wx.Panel):
 
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        main_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.my_file = wx.TextCtrl(self, style=wx.TE_MULTILINE| wx.TE_RICH)
-        self.other_file = wx.TextCtrl(self, style=wx.TE_MULTILINE| wx.TE_RICH)
-        main_sizer.Add(self.my_file, 1, wx.EXPAND)
-        main_sizer.Add(self.other_file, 1, wx.EXPAND)
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        text_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.my_file = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_RICH | wx.TE_READONLY | wx.HSCROLL)
+        self.other_file = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH| wx.HSCROLL)
+        self.my_file.Bind(wx.EVT_SCROLLBAR, self.sync_scroll, self.my_file)
+        self.my_file.Bind(wx.EVT_CHAR, self.sync_scroll, self.my_file)
+        btn1 = wx.Button(self, label='write changes', size=(700, 30))
+        text_sizer.Add(self.my_file, 1, wx.EXPAND)
+        text_sizer.Add(self.other_file, 1, wx.EXPAND)
+        main_sizer.Add(text_sizer,1,wx.EXPAND)
+        main_sizer.Add(btn1, flag=wx.CENTER)
         self.SetSizer(main_sizer)
 
     def write_file(self, my_file, other_file):
         my_file = my_file.split("\n")
         other_file = other_file.split("\n")
+        counter = 0
         for my_line, other_line in zip(my_file, other_file):
+            counter += 1
+
             if my_line == other_line:
+                self.line_number(wx.GREEN, counter)
                 self.my_file.AppendText(my_line + "\n")
                 self.other_file.AppendText(other_line + "\n")
             else:
+                self.line_number(wx.BLUE, counter)
                 self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLUE))
                 self.my_file.AppendText(my_line + "\n")
                 self.other_file.AppendText(other_line + "\n")
                 self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
+
+    def line_number(self, color, counter):
+        self.my_file.SetStyle(0, -1, wx.TextAttr(color))
+        self.other_file.SetStyle(0, -1, wx.TextAttr(color))
+        self.my_file.AppendText(str(counter) + ").   ")
+        self.other_file.AppendText(str(counter) + ").   ")
+        self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
+        self.my_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
+
+    def sync_scroll(self, e):
+        print("annnnnn")
 
 
 class Window2(wx.Frame):
@@ -106,10 +130,16 @@ class Template(wx.Panel):
         self.last_updated_file = None
         self.dlg = False
         self.frame = Window2(None)
+        self.frame.Bind(wx.EVT_CLOSE, self.re_open, self.frame)
+
+    def re_open(self, e):
+        self.frame.Destroy()
+        self.frame = Window2(None)
 
     def send_file(self, path):
         self.file = path
-        self.client = ProjectClientAndServer.Server(path)
+        self.client = ProjectClientAndServer.ServerP2P(path)
+        self.client.send_file(path)
 
     def open_file(self, path):
         self.file = path
@@ -155,7 +185,7 @@ class Template(wx.Panel):
         print("arad")
 
     def rcv_file(self):
-        self.client = ProjectClientAndServer.Client()
+        self.client = ProjectClientAndServer.ClientP2P()
         self.open_file(self.client.file)
 
     def change_color(self, e):

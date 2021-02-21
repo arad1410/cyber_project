@@ -53,30 +53,31 @@ class HomePage(wx.Panel):
         wx.StaticText(self, -1, "hello " + name + " enter user name to work with", (200, 10), ).SetFont(font)
 
 
-class TopPanel(wx.Panel):
+class TopPanel(scrolled.ScrolledPanel):
 
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        text_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.my_file = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_RICH | wx.TE_READONLY | wx.HSCROLL)
-        self.other_file = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH| wx.HSCROLL)
-        self.my_file.Bind(wx.EVT_SCROLLBAR, self.sync_scroll, self.my_file)
-        self.my_file.Bind(wx.EVT_CHAR, self.sync_scroll, self.my_file)
-        btn1 = wx.Button(self, label='write changes', size=(700, 30))
-        text_sizer.Add(self.my_file, 1, wx.EXPAND)
-        text_sizer.Add(self.other_file, 1, wx.EXPAND)
-        main_sizer.Add(text_sizer,1,wx.EXPAND)
-        main_sizer.Add(btn1, flag=wx.CENTER)
-        self.SetSizer(main_sizer)
+        scrolled.ScrolledPanel.__init__(self, parent, -1)
+        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.text_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.line_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.my_file = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_RICH | wx.TE_READONLY | wx.TE_NO_VSCROLL,
+                                   size=(-1, -1))
+        self.other_file = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH | wx.TE_NO_VSCROLL,
+                                      size=(-1, -1))
+        self.btn1 = wx.Button(self, label='write changes', size=(700, 30))
+        self.btn1.Bind(wx.EVT_BUTTON, self.make_changes, self.btn1)
+        # self.boxes = []
+        self.boxes = wx.CheckListBox(self, size=(-1, -1))
+        # for i in range(100):
+        #   self.boxes.append(wx.CheckBox(self))
+        self.diff = []
 
-    def write_file(self, my_file, other_file):
+    def write_file(self, my_file, other_file, lines):
         my_file = my_file.split("\n")
         other_file = other_file.split("\n")
         counter = 0
         for my_line, other_line in zip(my_file, other_file):
             counter += 1
-
             if my_line == other_line:
                 self.line_number(wx.GREEN, counter)
                 self.my_file.AppendText(my_line + "\n")
@@ -87,6 +88,8 @@ class TopPanel(wx.Panel):
                 self.my_file.AppendText(my_line + "\n")
                 self.other_file.AppendText(other_line + "\n")
                 self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
+                self.diff.append(counter)
+        self.make_window(lines)
 
     def line_number(self, color, counter):
         self.my_file.SetStyle(0, -1, wx.TextAttr(color))
@@ -96,8 +99,40 @@ class TopPanel(wx.Panel):
         self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
         self.my_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
 
-    def sync_scroll(self, e):
-        print("annnnnn")
+    def make_window(self, lines):
+
+        self.my_file.SetMinSize((-1, round(15.5 * lines)))
+        self.other_file.SetMinSize((-1, round(15.5 * lines)))
+        print(lines)
+        # for i in range(lines):
+        #   text = wx.StaticText(self, label=str(i))
+        # self.line_sizer.Add(text, 1)
+        # self.text_sizer.Add(line_sizer, 1)
+        # box = wx.BoxSizer(wx.VERTICAL)
+        print(self.diff)
+        # if self.diff:
+        #   box.AddSpacer(round(15.3 * self.diff[0] - 1))
+        #  box.Add(self.boxes[self.diff[0]])
+        # for i in range(len(self.diff) - 1):
+        #    print(i)
+        #   print(15.3 * (self.diff[i + 1] - self.diff[i]))
+        #  box.AddSpacer(round(15.3 * (self.diff[i + 1] - self.diff[i])))
+        # box.Add(self.boxes[i + 1])
+        for i in self.diff:
+            self.boxes.Append("line " + str(i))
+        self.text_sizer.Add(self.my_file, 1, wx.EXPAND)
+        # self.text_sizer.Add(box, -1, wx.EXPAND)
+        self.text_sizer.Add(self.other_file, 1, wx.EXPAND)
+        self.text_sizer.Add(self.boxes, -1, wx.EXPAND)
+        self.main_sizer.Add(self.text_sizer, 1, wx.EXPAND)
+        self.main_sizer.Add(self.btn1, flag=wx.CENTER)
+        self.SetupScrolling()
+        self.SetSizer(self.main_sizer)
+        self.Layout()
+        self.Refresh()
+
+    def make_changes(self, e):
+        pass
 
 
 class Window2(wx.Frame):
@@ -107,15 +142,20 @@ class Window2(wx.Frame):
         wx.Frame.__init__(self, parent, -1, 'Window2', size=(1300, 600))
         self.top_panel = TopPanel(self)
 
-    def write(self, my_file, other_file):
-        self.top_panel.write_file(my_file, other_file)
-
+    def write(self, my_file, other_file, lines):
+        self.top_panel.write_file(my_file, other_file, lines)
 
 class Template(wx.Panel):
+    """
+    This is the main editing page
+    """
 
-    # in charge of the files page has all the files and file name for display for the user to choose the file he
-    # wants to download
     def __init__(self, parent):
+        """
+        in charge of the files page has all the files and file name for display for the user to choose the file he
+        wants to download
+        :param parent: string
+        """
         wx.Panel.__init__(self, parent)
         self.SetSize((800, 600))
         self.sync = wx.Button(self, wx.ID_CLEAR, "SYNC WORK", pos=(300, 540))
@@ -129,10 +169,12 @@ class Template(wx.Panel):
         self.file = None
         self.last_updated_file = None
         self.dlg = False
+        self.lines = None
         self.frame = Window2(None)
         self.frame.Bind(wx.EVT_CLOSE, self.re_open, self.frame)
 
     def re_open(self, e):
+        print("aaaa")
         self.frame.Destroy()
         self.frame = Window2(None)
 
@@ -147,7 +189,7 @@ class Template(wx.Panel):
             with open(path) as fobj:
                 for line in fobj:
                     self.my_text.AppendText(line)
-            print(self.my_text.Value.split("\n"))
+            self.lines = len(self.my_text.Value.split("\n"))
             threading.Thread(target=self.rcv_messages).start()
 
     def sync_files(self, e):
@@ -164,7 +206,7 @@ class Template(wx.Panel):
         with open(self.client.file, "r")as f:
             f2 = f.read()
         self.frame.Show()
-        self.frame.write(self.my_text.Value, f2)
+        self.frame.write(self.my_text.Value, f2, self.lines)
         print("hi")
 
     def rcv_messages(self):
@@ -180,7 +222,8 @@ class Template(wx.Panel):
                         self.client.rcv_file()
                         self.write_changes()
                 if request == "@yes sync":
-                    print("send")
+                    with open(self.last_updated_file,"r") as f:
+                        print(f.read())
                     self.client.send_file(self.last_updated_file)
         print("arad")
 
@@ -266,8 +309,6 @@ class Program(wx.Frame):
         self.panel_one.btn.Bind(wx.EVT_BUTTON, self.show_panel_two)
         self.panel_three.btn.Bind(wx.EVT_BUTTON, self.show_home_page)
         self.sizer.Add(self.home_page.user_sizer, 1, wx.EXPAND)
-        if self.template.dlg:
-            self.new_frame()
         self.home_page.connect.Bind(wx.EVT_BUTTON, self.show_template)
         self.SetSize((800, 600))
         self.Centre()
@@ -309,9 +350,6 @@ class Program(wx.Frame):
         self.template.Show()
         self.template.rcv_file()
         print("back")
-
-    def new_frame(self):
-        print("aradddd")
 
     def show_panel_two(self, event):  # checks if got a user name and password the sends to to the server to check if
         # it is a correct password or user name if it is it will call the function in charge of showing the home page

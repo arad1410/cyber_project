@@ -1,47 +1,61 @@
-import wx
-import re
+class FileCmp(object):
+    def __init__(self):
+        self.my_file = open("C:\\Users\\arad1\\PycharmProjects\\mortalcombat\\cyber_project\\gameserver.txt",
+                            "r").readlines()
+        self.other_file = open(
+            "C:\\Users\\arad1\\PycharmProjects\\mortalcombat\\cyber_project\\last_updated_gameserver.txt",
+            "r").readlines()
+        self.diff_other_file = {}
+        self.diff_my_file = {}
+        self.chang_rate = 2 / 3
+        self.line = 0
+        self.deleted_lines = []
 
-string='''"Have more than thou showest,
+    def cmp_line(self, my_line, other_line, line):
+        counter = 0
+        answer = []
+        diff_counter = 0
+        for my_word in my_line:
+            other_word = other_line[counter]
+            if my_word != other_word:
+                answer.append(counter)
+                diff_counter += 1
+            counter += 1
+        if self.chang_rate * len(my_line) >= diff_counter:
+            self.diff_other_file[line] = answer
+            self.diff_my_file[line] = answer
+            return True
+        else:
+            self.diff_other_file[line] = -1
+            self.diff_my_file[line] = -1
+            return False
 
-Speak less than thou knowest,
+    def main_cmp(self):
+        deleted_lines = 0
+        same = False
+        for my_line in self.my_file:
+            other_line = self.other_file[self.line]
+            if my_line != other_line:
+                if same and not self.cmp_line(my_line.split(" "), other_line.split(" "), self.line):
+                    self.check_deleted_lines(my_line)
+            else:
+                self.diff_other_file[self.line] = 1
+                self.diff_my_file[self.line] = 1
+                self.line += 1
+                same = True
 
-Lend less than thou owest,
+    def check_deleted_lines(self, my_line):
+        deleted_lines = []
+        for line in self.other_file[self.line:]:
+            deleted_lines.append(self.line)
+            if self.cmp_line(my_line, line, self.line):
+                break
+            self.line += 1
+        else:
+            return
+        self.deleted_lines.append(deleted_lines)
 
-Ride more than thou goest,
-
-Learn more than thou trowest,
-
-Set less than thou throwest."
-
--The Fool in King Lear'''
-
-class Quote(wx.Frame):
-    def __init__(self, *args, **kwargs):
-        wx.Frame.__init__(self, None, -1)
-        self.InitUI()
-
-    def InitUI(self):
-        panel=wx.Panel(self)
-        word = 'thou'
-        word_colour = wx.TextAttr(wx.BLUE)
-        word_occurs = self.find_str(word,string)
-        self.text=wx.TextCtrl(panel, pos=(20,20), size=(250,220),
-            style=wx.TE_MULTILINE|wx.TE_READONLY)
-        self.text.AppendText(string)
-        for i in word_occurs:
-            #SetStyle(start pos, end pos, style)
-            self.text.SetStyle(i,i+len(word),word_colour)
-        self.SetSize((300,300))
-        self.Centre()
-        self.Show(True)
-
-    def find_str(self,sub,sent): #return positions of the word
-        return [x.start() for x in re.finditer(sub,sent)]
-
-def main():
-    app=wx.App()
-    Quote()
-    app.MainLoop()
 
 if __name__ == '__main__':
-    main()
+    a = FileCmp()
+    a.main_cmp()

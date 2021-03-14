@@ -1,0 +1,30 @@
+import wx
+
+class MyFrame(wx.Frame):
+    def __init__(self):
+        wx.Frame.__init__(self, parent = None, title="Test of BoxSizer")
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        hbox=wx.BoxSizer(wx.HORIZONTAL)
+        hbox1=wx.BoxSizer(wx.HORIZONTAL)
+        self.panel=wx.Panel(self)
+        self.btn1=wx.Button(self.panel, label="button 1")
+        self.btn2=wx.Button(self.panel, label="button 2")
+        self.btn3=wx.Button(self.panel, label="button 3")
+        self.btn4=wx.Button(self.panel, label="button 4")
+        hbox.Add(self.btn1, proportion = 1, flag=wx.CENTER | wx.ALL, border=5)
+        hbox.Add((50,50), proportion=1, flag=wx.EXPAND)
+        hbox.Add(self.btn2, proportion = 1, flag=wx.CENTER | wx.ALL, border=5)
+        hbox1.Add(self.btn3, proportion = 1, flag=wx.CENTER | wx.ALL, border=5)
+        hbox1.Add((100,100), proportion=4, flag=wx.EXPAND)
+        hbox1.Add(self.btn4, proportion = 1, flag=wx.CENTER | wx.ALL, border=5)
+        vbox.Add(hbox, proportion = 1, flag=wx.CENTER | wx.ALL, border = 5)
+        #vbox.Add((0,0), proportion = 4, flag=wx.EXPAND)
+        vbox.Add(hbox1, proportion = 1, flag=wx.CENTER | wx.ALL, border = 5)
+        self.panel.SetSizer(vbox)
+        vbox.SetSizeHints(self)
+        self.Centre()
+if __name__ == '__main__':
+    app = wx.App(redirect = False)
+    frame = MyFrame()
+    frame.Show(True)
+    app.MainLoop()

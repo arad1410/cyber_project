@@ -53,11 +53,9 @@ class ClientHandler(threading.Thread):
                 self.dict = database.SyncDataBase(USER_FILE)
                 self.dict.check(msg["user_name"])  # checks if the user name already exists
                 if self.dict.answer:
-                    print("here")
                     self.send_message("no")
                 else:
                     self.dict.write(msg["user_name"], msg["user_password"])
-                    print("arad")
                     self.send_message("good")
                     CLIENTS_SOCKET[msg["user_name"]] = (self.sock, self.key)
                     print(CLIENTS_SOCKET)
@@ -65,7 +63,6 @@ class ClientHandler(threading.Thread):
                 # given are correct
                 self.dict.check(msg["user_name"])
                 if not self.dict.answer:
-                    print("here3")
                     self.send_message("no")
                 else:
                     self.dict.check_login(msg["user_name"], msg["user_password"])
@@ -74,7 +71,6 @@ class ClientHandler(threading.Thread):
                         self.send_message("good")
                         CLIENTS_SOCKET[msg["user_name"]] = (self.sock, self.key)
                     else:
-                        print("here2")
                         self.send_message("no")
             elif msg["action"] == "wc":  # checks if the action is to receive a file from a specific client
                 if msg["user_name"] in CLIENTS_SOCKET:  # checks if the client is around

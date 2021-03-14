@@ -1,10 +1,7 @@
 class FileCmp(object):
-    def __init__(self):
-        self.my_file = open("C:\\Users\\arad1\\PycharmProjects\\mortalcombat\\cyber_project\\gameserver.txt",
-                            "r").readlines()
-        self.other_file = open(
-            "C:\\Users\\arad1\\PycharmProjects\\mortalcombat\\cyber_project\\last_updated_gameserver.txt",
-            "r").readlines()
+    def __init__(self, my_file, other_file):
+        self.my_file = my_file
+        self.other_file = other_file
         self.diff_other_file = {}
         self.diff_my_file = {}
         self.diff_my_lines = []
@@ -35,23 +32,25 @@ class FileCmp(object):
             return False
 
     def main_cmp(self):
+        self.deleted_lines = []
+        self.other_deleted_lines = []
         same = False
         while self.my_index < len(self.my_file):
             my_line = self.my_file[self.my_index]
             other_line = self.other_file[self.other_index]
             if my_line != other_line:
                 if same:
-                    if not self.check_other_deleted_lines(other_line):
-                        self.diff_other_lines.append(self.my_index)
-                    if not self.check_my_deleted_lines(my_line):
-                        self.diff_my_lines.append(self.other_index)
+                    if not self.check_other_deleted_lines(other_line) == self.check_my_deleted_lines(my_line) == False:
+                        print(self.check_other_deleted_lines(other_line))
+                        print(self.check_my_deleted_lines(my_line))
+                        self.diff_other_lines.append(self.my_index-1)
+                        self.diff_my_lines.append(self.other_index-1)
             else:
                 self.diff_other_file[self.other_index] = -1
                 self.diff_my_file[self.my_index] = -1
                 self.my_index += 1
                 self.other_index += 1
                 same = True
-            print(self.other_index)
         print(self.deleted_lines)
         print(self.other_deleted_lines)
         print(self.diff_my_lines)
@@ -97,5 +96,9 @@ class FileCmp(object):
 
 
 if __name__ == '__main__':
-    a = FileCmp()
+    with open("C:\\Users\\arad1\\PycharmProjects\\mortalcombat\\cyber_project\\gameserver.txt", "r") as f:
+        f = f.read().split("\n")
+    with open("C:\\Users\\arad1\\PycharmProjects\\mortalcombat\\cyber_project\\last_updated_gameserver.txt", "r") as f2:
+        f2 = f2.read().split("\n")
+    a = FileCmp(f, f2)
     a.main_cmp()

@@ -4,6 +4,7 @@ import os
 import threading
 import ProjectClientAndServer
 import wx.lib.scrolledpanel as scrolled
+import FileCmp
 import wx.richtext as rt
 import re
 import difflib
@@ -71,45 +72,86 @@ class TopPanel(scrolled.ScrolledPanel):
         # for i in range(100):
         #   self.boxes.append(wx.CheckBox(self))
         self.diff = []
+        self.file_cmp = None
 
     def write_file(self, my_file, other_file, lines):
         my_file = my_file.split("\n")
         other_file = other_file.split("\n")
         counter = 0
-        for my_line, other_line in zip(my_file, other_file):
-            counter += 1
-            if my_line == other_line:
-                self.line_number(wx.GREEN, counter)
-                self.my_file.AppendText(my_line + "\n")
-                self.other_file.AppendText(other_line + "\n")
-            else:
-                self.line_number(wx.BLUE, counter)
-                self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLUE))
-                self.my_file.AppendText(my_line + "\n")
-                self.other_file.AppendText(other_line + "\n")
-                self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
-                self.diff.append(counter)
+        self.file_cmp = FileCmp.FileCmp(my_file, other_file)
+        self.file_cmp.main_cmp()
+        self.write_my_file(my_file)
+        self.write_other_file(other_file)
         self.make_window(lines)
+        self.Refresh()
 
-    def line_number(self, color, counter):
+    def write_my_file(self, my_file):
+        other_deleted_lines = []
+        for i in self.file_cmp.other_deleted_lines:
+            self.boxes.Append("delete lines " + str(i[0])+"-"+str(i[-1]))
+            for j in i:
+                other_deleted_lines.append(j)
+        for i in range(1, len(my_file) + 1):
+            if i not in other_deleted_lines and i not in self.file_cmp.diff_other_lines:
+                self.my_line_number(wx.GREEN, i)
+                self.my_file.AppendText(my_file[i - 1] + "\n")
+            # elif i not in file_cmp.diff_my_lines:
+            elif i not in other_deleted_lines:
+                self.my_line_number(wx.RED, i)
+                self.my_file.SetStyle(0, -1, wx.TextAttr(wx.RED))
+                self.my_file.AppendText(my_file[i - 1] + "\n")
+                self.my_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
+            else:
+                self.my_line_number(wx.BLUE, i)
+                self.my_file.SetStyle(0, -1, wx.TextAttr(wx.BLUE))
+                self.my_file.AppendText(my_file[i - 1] + "\n")
+                self.my_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
+
+    def write_other_file(self, my_file):
+        my_deleted_lines = []
+        for i in self.file_cmp.deleted_lines:
+            self.boxes.Append("add lines " + str(i[0]) + "-" + str(i[-1]))
+            for j in i:
+                my_deleted_lines.append(j)
+        for i in range(1, len(my_file) + 1):
+            if i not in my_deleted_lines and i not in self.file_cmp.diff_my_lines:
+                self.other_line_number(wx.GREEN, i)
+                self.other_file.AppendText(my_file[i - 1] + "\n")
+            # elif i not in file_cmp.diff_other_lines:
+            elif i not in my_deleted_lines:
+                self.other_line_number(wx.RED, i)
+                self.other_file.SetStyle(0, -1, wx.TextAttr(wx.RED))
+                self.other_file.AppendText(my_file[i - 1] + "\n")
+                self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
+            else:
+                self.other_line_number(wx.BLUE, i)
+                self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLUE))
+                self.other_file.AppendText(my_file[i - 1] + "\n")
+                self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
+            # else:
+            #   self.other_line_number(wx.RED, i - 1)
+            #  self.other_file.SetStyle(0, -1, wx.TextAttr(wx.RED))
+            # self.other_file.AppendText(my_file[i - 1] + "\n")
+            # self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
+
+    def my_line_number(self, color, counter):
         self.my_file.SetStyle(0, -1, wx.TextAttr(color))
-        self.other_file.SetStyle(0, -1, wx.TextAttr(color))
         self.my_file.AppendText(str(counter) + ").   ")
-        self.other_file.AppendText(str(counter) + ").   ")
-        self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
         self.my_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
 
-    def make_window(self, lines):
+    def other_line_number(self, color, counter):
+        self.other_file.SetStyle(0, -1, wx.TextAttr(color))
+        self.other_file.AppendText(str(counter) + ").   ")
+        self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
 
-        self.my_file.SetMinSize((-1, round(15.5 * lines)))
-        self.other_file.SetMinSize((-1, round(15.5 * lines)))
-        print(lines)
+    def make_window(self, lines):
+        self.my_file.SetMinSize((500, round(15.5 * lines)))
+        self.other_file.SetMinSize((500, round(15.5 * lines)))
         # for i in range(lines):
         #   text = wx.StaticText(self, label=str(i))
         # self.line_sizer.Add(text, 1)
         # self.text_sizer.Add(line_sizer, 1)
         # box = wx.BoxSizer(wx.VERTICAL)
-        print(self.diff)
         # if self.diff:
         #   box.AddSpacer(round(15.3 * self.diff[0] - 1))
         #  box.Add(self.boxes[self.diff[0]])
@@ -118,8 +160,8 @@ class TopPanel(scrolled.ScrolledPanel):
         #   print(15.3 * (self.diff[i + 1] - self.diff[i]))
         #  box.AddSpacer(round(15.3 * (self.diff[i + 1] - self.diff[i])))
         # box.Add(self.boxes[i + 1])
-        for i in self.diff:
-            self.boxes.Append("line " + str(i))
+        #       for i in self.diff:
+        #            self.boxes.Append("line " + str(i))
         self.text_sizer.Add(self.my_file, 1, wx.EXPAND)
         # self.text_sizer.Add(box, -1, wx.EXPAND)
         self.text_sizer.Add(self.other_file, 1, wx.EXPAND)
@@ -128,7 +170,6 @@ class TopPanel(scrolled.ScrolledPanel):
         self.main_sizer.Add(self.btn1, flag=wx.CENTER)
         self.SetupScrolling()
         self.SetSizer(self.main_sizer)
-        self.Layout()
         self.Refresh()
 
     def make_changes(self, e):
@@ -144,6 +185,8 @@ class Window2(wx.Frame):
 
     def write(self, my_file, other_file, lines):
         self.top_panel.write_file(my_file, other_file, lines)
+        self.Maximize(True)
+
 
 class Template(wx.Panel):
     """
@@ -170,11 +213,11 @@ class Template(wx.Panel):
         self.last_updated_file = None
         self.dlg = False
         self.lines = None
+        self.other_lines = None
         self.frame = Window2(None)
         self.frame.Bind(wx.EVT_CLOSE, self.re_open, self.frame)
 
     def re_open(self, e):
-        print("aaaa")
         self.frame.Destroy()
         self.frame = Window2(None)
 
@@ -206,8 +249,8 @@ class Template(wx.Panel):
         with open(self.client.file, "r")as f:
             f2 = f.read()
         self.frame.Show()
-        self.frame.write(self.my_text.Value, f2, self.lines)
-        print("hi")
+        other_lines = len(f2.split("\n"))
+        self.frame.write(self.my_text.Value, f2, self.lines if self.lines > other_lines else other_lines)
 
     def rcv_messages(self):
         while True:
@@ -217,15 +260,11 @@ class Template(wx.Panel):
                     self.dlg = wx.MessageBox('want to sync your file?', 'TestDialog',
                                              wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
                     if self.dlg == wx.YES:
-                        print("yes")
                         self.client.send("@yes sync".encode())
                         self.client.rcv_file()
                         self.write_changes()
                 if request == "@yes sync":
-                    with open(self.last_updated_file,"r") as f:
-                        print(f.read())
                     self.client.send_file(self.last_updated_file)
-        print("arad")
 
     def rcv_file(self):
         self.client = ProjectClientAndServer.ClientP2P()
@@ -235,8 +274,6 @@ class Template(wx.Panel):
         if self.line == self.my_text.PositionToXY(self.my_text.GetInsertionPoint())[2]:
             self.text += chr(e.GetKeyCode())
         else:
-            if self.text:
-                print(self.text)
             self.text = chr(e.GetKeyCode())
             self.line = self.my_text.PositionToXY(self.my_text.GetInsertionPoint())[2]
         self.my_text.SetStyle(0, -1, wx.TextAttr(wx.RED))
@@ -324,7 +361,6 @@ class Program(wx.Frame):
         self.Layout()
 
     def show_template(self, event):
-        print(self.home_page.user.Value)
         wildcard = "TXT files (*.txt)|*.txt"
         dialog = wx.FileDialog(self, "Open Text Files", wildcard=wildcard,
                                style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
@@ -338,18 +374,15 @@ class Program(wx.Frame):
         while not self.client.answer:
             pass
         if self.client.answer == "asked the client":
-            print("here")
             self.home_page.Hide()
             self.template.Show()
             self.template.send_file(path)
             self.template.open_file(path)
-            print("back")
 
     def start_to_work(self):
         self.home_page.Hide()
         self.template.Show()
         self.template.rcv_file()
-        print("back")
 
     def show_panel_two(self, event):  # checks if got a user name and password the sends to to the server to check if
         # it is a correct password or user name if it is it will call the function in charge of showing the home page
@@ -405,7 +438,6 @@ class Program(wx.Frame):
                 self.start_to_work()
                 while not self.client.answer:
                     pass
-                print("here")
             if self.client.answer == "close client":  # stops the connection
                 self.client.my_socket.close()
                 on = False

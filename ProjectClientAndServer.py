@@ -45,8 +45,6 @@ class ClientP2P(object):
         self.my_socket.send(self.aes.encrypt_aes(data, self.key))
 
     def send_file(self, file):
-        with open(file, "r") as f:
-            print(f.read())
         self.file_send_class.send_file(file)
 
 
@@ -83,7 +81,6 @@ class ServerP2P(object):
         self.client_sock.send(self.aes.encrypt_aes(data, self.key))
 
     def send_file(self, file):
-        print(file)
         self.file_send_class.send_file(file)
 
     def rcv_file(self):
@@ -97,7 +94,6 @@ class RcvFile(object):
         self.aes = aes
 
     def rcv_file(self):
-        print("start")
         answer = pickle.loads(self.sock.recv(1024))
         answer = answer.split(" ", 1)
         answer[1] = answer[1].split("\\")[-1]
@@ -110,7 +106,6 @@ class RcvFile(object):
             data = data[0:-12]
             bytes_read = self.aes.decrypt_aes(data, self.key)
             f.write(bytes_read)
-            print("done")
         return answer[1]
 
 
@@ -122,13 +117,10 @@ class SendFile(object):
         self.key = key
 
     def send_file(self, file):
-        print(file)
         with open(file, "rb") as f:
             f = f.read()
-            print(f)
             f = self.aes.encrypt_aes(f, self.key)
             f += "done sending".encode()
-        print("start")
         self.sock.send(pickle.dumps(str(os.path.getsize(file)) + " " + file))
         progress = tqdm.tqdm(range(os.path.getsize(file)), f"Sending {file}", unit="B", unit_scale=True,
                              unit_divisor=1024)
@@ -138,7 +130,6 @@ class SendFile(object):
             bytes_read = f[BUFFER_SIZE * counter:BUFFER_SIZE * (counter + 1)]
             if not bytes_read:
                 # file transmitting is done
-                print("done")
                 break
             # we use sendall to assure transimission in
             # busy networks

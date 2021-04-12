@@ -69,6 +69,7 @@ class TopPanel(scrolled.ScrolledPanel):
         self.btn1.Bind(wx.EVT_BUTTON, self.make_changes, self.btn1)
         # self.boxes = []
         self.boxes = wx.CheckListBox(self, size=(-1, -1))
+        self.organize_box = []
         # for i in range(100):
         #   self.boxes.append(wx.CheckBox(self))
         self.diff = []
@@ -92,14 +93,14 @@ class TopPanel(scrolled.ScrolledPanel):
 
     def check_diff_lines(self):
         for i in range(len(self.file_cmp.diff_my_lines)):
-            self.boxes.Append(
+            self.organize_box.append(
                 "change line " + str(self.file_cmp.diff_other_lines[i]) + " with " + str(
                     self.file_cmp.diff_my_lines[i]))
 
     def write_my_file(self, my_file):
         other_deleted_lines = []
         for i in self.file_cmp.other_deleted_lines:
-            self.boxes.Append("delete lines " + str(i[0]) + "-" + str(i[-1]))
+            self.organize_box.append("delete lines " + str(i[0]) + "-" + str(i[-1]))
             for j in i:
                 other_deleted_lines.append(j)
         for i in range(1, len(my_file) + 1):
@@ -121,7 +122,7 @@ class TopPanel(scrolled.ScrolledPanel):
     def write_other_file(self, my_file):
         my_deleted_lines = []
         for i in self.file_cmp.deleted_lines:
-            self.boxes.Append("add lines " + str(i[0]) + "-" + str(i[-1]))
+            self.organize_box.append("add lines " + str(i[0]) + "-" + str(i[-1]))
             for j in i:
                 my_deleted_lines.append(j)
         for i in range(1, len(my_file) + 1):
@@ -160,6 +161,7 @@ class TopPanel(scrolled.ScrolledPanel):
         self.other_file.SetMinSize((500, round(15.5 * lines)))
         self.text_sizer.Add(self.my_file, 1, wx.EXPAND)
         self.text_sizer.Add(self.other_file, 1, wx.EXPAND)
+        self.organize_box_list()
         self.text_sizer.Add(self.boxes, -1, wx.EXPAND)
         self.main_sizer.Add(self.text_sizer, 1, wx.EXPAND)
         self.main_sizer.Add(self.btn1, flag=wx.CENTER)
@@ -167,26 +169,45 @@ class TopPanel(scrolled.ScrolledPanel):
         self.SetSizer(self.main_sizer)
         self.Refresh()
 
+    def organize_box_list(self):
+        self.organize_box.sort(key=self.sort_key)
+        for box in self.organize_box:
+            self.boxes.Append(box)
+
+    def sort_key(self, e):
+        action = e.split()
+        if action[0] == "delete":
+            lines = action[-1].split("-")
+            return int(lines[0])
+        elif action[0] == "change":
+            return int(action[2])
+        else:
+            lines = action[-1].split("-")
+            return int(lines[0])
+
     def make_changes(self, e):
+        add_lines = 0
         for box in self.boxes.GetCheckedStrings():
-            add_lines = 0
             print(box)
             action = box.split()
             if action[0] == "delete":
                 lines = action[-1].split("-")
                 add_lines = int(lines[-1]) - int(lines[0]) + 1
                 del self.my_file_text[int(lines[0]) - 1:int(lines[-1])]
-                [print(i) for i in self.my_file_text]
-            if action[0] == "change":
-                self.my_file_text[action[2]] = self.other_file_text[action[-1]]
+            elif action[0] == "change":
+                print(add_lines)
+                print(self.my_file_text[int(action[2])-1-add_lines])
+                self.my_file_text[int(action[2])-1-add_lines] = self.other_file_text[int(action[-1])-1]
+                print(self.my_file_text[int(action[2])-1-add_lines])
             else:
                 lines = action[-1].split("-")
                 print("j")
                 for i in range(int(lines[-1]) - int(lines[0]) + 1):
                     print(i)
-                    print(self.other_file_text[int(lines[0])+i-1])
-                    self.my_file_text.insert(int(lines[0])+add_lines+i, self.other_file_text[int(lines[0])+i-1])
-                [print(i) for i in self.my_file_text]
+                    print(self.other_file_text[int(lines[0]) + i - 1])
+                    self.my_file_text.insert(int(lines[0]) + add_lines + i, self.other_file_text[int(lines[0]) + i - 1])
+        f = self.GetParent()
+        f.Close()
 
 
 class Window2(wx.Frame):
@@ -231,8 +252,14 @@ class Template(wx.Panel):
         self.frame.Bind(wx.EVT_CLOSE, self.re_open, self.frame)
 
     def re_open(self, e):
+        print("hi")
+        self.write_new_changes()
         self.frame.Destroy()
         self.frame = Window2(None)
+
+    def write_new_changes(self):
+        self.my_text.Clear()
+        self.my_text.WriteText("\n".join(self.frame.top_panel.my_file_text))
 
     def send_file(self, path):
         self.file = path

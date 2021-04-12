@@ -39,18 +39,18 @@ class FileCmp(object):
             my_line = self.my_file[self.my_index]
             other_line = self.other_file[self.other_index]
             if my_line != other_line:
-                if same:
-                    if not self.check_other_deleted_lines(other_line) == self.check_my_deleted_lines(my_line) == False:
-                        print(self.check_other_deleted_lines(other_line))
-                        print(self.check_my_deleted_lines(my_line))
-                        self.diff_other_lines.append(self.my_index-1)
-                        self.diff_my_lines.append(self.other_index-1)
+                if self.check_other_deleted_lines(other_line) == self.check_my_deleted_lines(my_line) == False:
+                    print(self.check_other_deleted_lines(other_line))
+                    print(self.check_my_deleted_lines(my_line))
+                    self.diff_other_lines.append(self.my_index - 1)
+                    self.diff_my_lines.append(self.other_index - 1)
+                    self.other_index = self.other_index - 1
+                    self.my_index = self.my_index - 1
             else:
                 self.diff_other_file[self.other_index] = -1
                 self.diff_my_file[self.my_index] = -1
                 self.my_index += 1
                 self.other_index += 1
-                same = True
         print(self.deleted_lines)
         print(self.other_deleted_lines)
         print(self.diff_my_lines)
@@ -64,7 +64,7 @@ class FileCmp(object):
         if my_line == "\n":
             my_line = self.my_file[self.other_index]
         for line in self.other_file[self.other_index:]:
-            if my_line == line:
+            if my_line.strip(" ") == line.strip(" "):
                 self.other_index += 1
                 break
             self.other_index += 1
@@ -90,9 +90,9 @@ class FileCmp(object):
             deleted_lines.append(self.my_index)
         else:
             self.my_index = counter + 1
-            return True
+            return False
         self.other_deleted_lines.append(deleted_lines)
-        return False
+        return True
 
 
 if __name__ == '__main__':

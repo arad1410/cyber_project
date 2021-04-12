@@ -73,22 +73,33 @@ class TopPanel(scrolled.ScrolledPanel):
         #   self.boxes.append(wx.CheckBox(self))
         self.diff = []
         self.file_cmp = None
+        self.my_file_text = None
+        self.other_file_text = None
 
     def write_file(self, my_file, other_file, lines):
         my_file = my_file.split("\n")
         other_file = other_file.split("\n")
         counter = 0
+        self.other_file_text = other_file
+        self.my_file_text = my_file
         self.file_cmp = FileCmp.FileCmp(my_file, other_file)
         self.file_cmp.main_cmp()
         self.write_my_file(my_file)
         self.write_other_file(other_file)
+        self.check_diff_lines()
         self.make_window(lines)
         self.Refresh()
+
+    def check_diff_lines(self):
+        for i in range(len(self.file_cmp.diff_my_lines)):
+            self.boxes.Append(
+                "change line " + str(self.file_cmp.diff_other_lines[i]) + " with " + str(
+                    self.file_cmp.diff_my_lines[i]))
 
     def write_my_file(self, my_file):
         other_deleted_lines = []
         for i in self.file_cmp.other_deleted_lines:
-            self.boxes.Append("delete lines " + str(i[0])+"-"+str(i[-1]))
+            self.boxes.Append("delete lines " + str(i[0]) + "-" + str(i[-1]))
             for j in i:
                 other_deleted_lines.append(j)
         for i in range(1, len(my_file) + 1):
@@ -147,23 +158,7 @@ class TopPanel(scrolled.ScrolledPanel):
     def make_window(self, lines):
         self.my_file.SetMinSize((500, round(15.5 * lines)))
         self.other_file.SetMinSize((500, round(15.5 * lines)))
-        # for i in range(lines):
-        #   text = wx.StaticText(self, label=str(i))
-        # self.line_sizer.Add(text, 1)
-        # self.text_sizer.Add(line_sizer, 1)
-        # box = wx.BoxSizer(wx.VERTICAL)
-        # if self.diff:
-        #   box.AddSpacer(round(15.3 * self.diff[0] - 1))
-        #  box.Add(self.boxes[self.diff[0]])
-        # for i in range(len(self.diff) - 1):
-        #    print(i)
-        #   print(15.3 * (self.diff[i + 1] - self.diff[i]))
-        #  box.AddSpacer(round(15.3 * (self.diff[i + 1] - self.diff[i])))
-        # box.Add(self.boxes[i + 1])
-        #       for i in self.diff:
-        #            self.boxes.Append("line " + str(i))
         self.text_sizer.Add(self.my_file, 1, wx.EXPAND)
-        # self.text_sizer.Add(box, -1, wx.EXPAND)
         self.text_sizer.Add(self.other_file, 1, wx.EXPAND)
         self.text_sizer.Add(self.boxes, -1, wx.EXPAND)
         self.main_sizer.Add(self.text_sizer, 1, wx.EXPAND)
@@ -173,7 +168,25 @@ class TopPanel(scrolled.ScrolledPanel):
         self.Refresh()
 
     def make_changes(self, e):
-        pass
+        for box in self.boxes.GetCheckedStrings():
+            add_lines = 0
+            print(box)
+            action = box.split()
+            if action[0] == "delete":
+                lines = action[-1].split("-")
+                add_lines = int(lines[-1]) - int(lines[0]) + 1
+                del self.my_file_text[int(lines[0]) - 1:int(lines[-1])]
+                [print(i) for i in self.my_file_text]
+            if action[0] == "change":
+                self.my_file_text[action[2]] = self.other_file_text[action[-1]]
+            else:
+                lines = action[-1].split("-")
+                print("j")
+                for i in range(int(lines[-1]) - int(lines[0]) + 1):
+                    print(i)
+                    print(self.other_file_text[int(lines[0])+i-1])
+                    self.my_file_text.insert(int(lines[0])+add_lines+i, self.other_file_text[int(lines[0])+i-1])
+                [print(i) for i in self.my_file_text]
 
 
 class Window2(wx.Frame):

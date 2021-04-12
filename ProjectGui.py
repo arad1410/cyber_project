@@ -73,6 +73,7 @@ class TopPanel(scrolled.ScrolledPanel):
         # for i in range(100):
         #   self.boxes.append(wx.CheckBox(self))
         self.diff = []
+        self.add_lines = 0
         self.file_cmp = None
         self.my_file_text = None
         self.other_file_text = None
@@ -186,26 +187,18 @@ class TopPanel(scrolled.ScrolledPanel):
             return int(lines[0])
 
     def make_changes(self, e):
-        add_lines = 0
         for box in self.boxes.GetCheckedStrings():
             print(box)
             action = box.split()
             if action[0] == "delete":
                 lines = action[-1].split("-")
-                add_lines = int(lines[-1]) - int(lines[0]) + 1
                 del self.my_file_text[int(lines[0]) - 1:int(lines[-1])]
             elif action[0] == "change":
-                print(add_lines)
-                print(self.my_file_text[int(action[2])-1-add_lines])
-                self.my_file_text[int(action[2])-1-add_lines] = self.other_file_text[int(action[-1])-1]
-                print(self.my_file_text[int(action[2])-1-add_lines])
+                self.my_file_text[int(action[2]) - 1] = self.other_file_text[int(action[-1]) - 1]
             else:
                 lines = action[-1].split("-")
-                print("j")
                 for i in range(int(lines[-1]) - int(lines[0]) + 1):
-                    print(i)
-                    print(self.other_file_text[int(lines[0]) + i - 1])
-                    self.my_file_text.insert(int(lines[0]) + add_lines + i, self.other_file_text[int(lines[0]) + i - 1])
+                    self.my_file_text.insert(int(lines[0]) + i, self.other_file_text[int(lines[0]) + i - 1])
         f = self.GetParent()
         f.Close()
 

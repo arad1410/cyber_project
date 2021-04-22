@@ -102,6 +102,7 @@ class TopPanel(scrolled.ScrolledPanel):
         other_deleted_lines = []
         for i in self.file_cmp.other_deleted_lines:
             self.organize_box.append("delete lines " + str(i[0]) + "-" + str(i[-1]))
+            self.add_lines += i[-1] - i[0] + 1
             for j in i:
                 other_deleted_lines.append(j)
         for i in range(1, len(my_file) + 1):
@@ -123,9 +124,11 @@ class TopPanel(scrolled.ScrolledPanel):
     def write_other_file(self, my_file):
         my_deleted_lines = []
         for i in self.file_cmp.deleted_lines:
-            self.organize_box.append("add lines " + str(i[0]) + "-" + str(i[-1]))
+            self.organize_box.append("add lines " + str(i[1]) + "-" + str(i[-1]) + " at line " + str(i[0] - 1))
+            self.add_lines -= i[-1] - i[0] - 1
             for j in i:
                 my_deleted_lines.append(j)
+            del my_deleted_lines[0]
         for i in range(1, len(my_file) + 1):
             if i not in my_deleted_lines and i not in self.file_cmp.diff_my_lines:
                 self.other_line_number(wx.GREEN, i)
@@ -187,18 +190,28 @@ class TopPanel(scrolled.ScrolledPanel):
             return int(lines[0])
 
     def make_changes(self, e):
+        print(self.add_lines)
+        add_lines = 0
         for box in self.boxes.GetCheckedStrings():
             print(box)
             action = box.split()
             if action[0] == "delete":
                 lines = action[-1].split("-")
+                #                self.add_lines -= int(lines[-1]) - int(lines[0]) - 1
+                add_lines -= int(lines[-1]) - int(lines[0]) + 1
                 del self.my_file_text[int(lines[0]) - 1:int(lines[-1])]
             elif action[0] == "change":
-                self.my_file_text[int(action[2]) - 1] = self.other_file_text[int(action[-1]) - 1]
+                self.my_file_text[int(action[2]) + add_lines + 1] = self.other_file_text[int(action[-1])-1]
             else:
-                lines = action[-1].split("-")
+                lines = action[2].split("-")
+                #                self.add_lines += int(lines[-1]) - int(lines[0]) + 1
+                where_to_add = action[-1]
+                print(lines)
+                print(where_to_add)
                 for i in range(int(lines[-1]) - int(lines[0]) + 1):
-                    self.my_file_text.insert(int(lines[0]) + i, self.other_file_text[int(lines[0]) + i - 1])
+                    self.my_file_text.insert(int(where_to_add) + add_lines + i,
+                                             self.other_file_text[int(lines[0]) + i - 1])
+                add_lines += int(lines[-1]) - int(lines[0]) - 1
         f = self.GetParent()
         f.Close()
 

@@ -57,7 +57,7 @@ class FileCmp(object):
         print(self.diff_other_lines)
 
     def check_my_deleted_lines(self, my_line):
-        deleted_lines = []
+        deleted_lines = [self.my_index]
         counter = self.other_index
         self.other_index += 1
         deleted_lines.append(self.other_index)

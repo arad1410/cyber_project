@@ -5,9 +5,7 @@ import threading
 import ProjectClientAndServer
 import wx.lib.scrolledpanel as scrolled
 import FileCmp
-import wx.richtext as rt
-import re
-import difflib
+
 
 
 # new gui is in charge of all the user interface of the program from getting the users name and password to making all

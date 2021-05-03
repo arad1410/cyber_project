@@ -12,25 +12,6 @@ class FileCmp(object):
         self.deleted_lines = []
         self.other_deleted_lines = []
 
-    def cmp_line(self, my_line, other_line):
-        counter = 0
-        answer = []
-        diff_counter = 0
-        for my_word in my_line:
-            other_word = other_line[counter]
-            if my_word != other_word:
-                answer.append(counter)
-                diff_counter += 1
-            counter += 1
-        if self.chang_rate * len(my_line) >= diff_counter:
-            self.diff_other_file[self.other_index] = answer
-            self.diff_my_file[self.my_index] = answer
-            return True
-        else:
-            self.diff_other_file[self.other_index] = -1
-            self.diff_my_file[self.my_index] = -1
-            return False
-
     def main_cmp(self):
         self.deleted_lines = []
         self.other_deleted_lines = []

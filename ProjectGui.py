@@ -7,7 +7,6 @@ import wx.lib.scrolledpanel as scrolled
 import FileCmp
 
 
-
 # new gui is in charge of all the user interface of the program from getting the users name and password to making all
 # the different panels and creates the client and or client or server for the pear to pear connection and file sending
 def print_answer(arg):  # prints a message box on the screen
@@ -57,13 +56,22 @@ class TopPanel(scrolled.ScrolledPanel):
     def __init__(self, parent):
         scrolled.ScrolledPanel.__init__(self, parent, -1)
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.text_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.line_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.my_file = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_RICH | wx.TE_READONLY | wx.TE_NO_VSCROLL,
+        self.all_texts_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.my_text_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.changes_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.other_text_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.my_file = wx.TextCtrl(self,
+                                   style=wx.TE_LEFT | wx.TE_MULTILINE | wx.TE_RICH | wx.TE_READONLY | wx.TE_NO_VSCROLL,
                                    size=(-1, -1))
-        self.other_file = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH | wx.TE_NO_VSCROLL,
+        self.other_file = wx.TextCtrl(self,
+                                      style=wx.TE_LEFT | wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH | wx.TE_NO_VSCROLL,
                                       size=(-1, -1))
         self.btn1 = wx.Button(self, label='write changes', size=(700, 30))
+        font = wx.Font(25, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
+        self.my_lbl = wx.StaticText(self, -1, style=wx.ALIGN_CENTER, label="Your File")
+        self.my_lbl.SetFont(font)
+        self.other_lbl = wx.StaticText(self, -1, style=wx.ALIGN_CENTER, label="Other File")
+        self.other_lbl.SetFont(font)
         self.btn1.Bind(wx.EVT_BUTTON, self.make_changes, self.btn1)
         # self.boxes = []
         self.boxes = wx.CheckListBox(self, size=(-1, -1))
@@ -161,11 +169,15 @@ class TopPanel(scrolled.ScrolledPanel):
     def make_window(self, lines):
         self.my_file.SetMinSize((500, round(15.5 * lines)))
         self.other_file.SetMinSize((500, round(15.5 * lines)))
-        self.text_sizer.Add(self.my_file, 1, wx.EXPAND)
-        self.text_sizer.Add(self.other_file, 1, wx.EXPAND)
+        self.my_text_sizer.Add(self.my_lbl, 1, wx.EXPAND)
+        self.my_text_sizer.Add(self.my_file, 0, wx.EXPAND)
+        self.other_text_sizer.Add(self.other_lbl, 1, wx.EXPAND)
+        self.other_text_sizer.Add(self.other_file, 0, wx.EXPAND)
         self.organize_box_list()
-        self.text_sizer.Add(self.boxes, -1, wx.EXPAND)
-        self.main_sizer.Add(self.text_sizer, 1, wx.EXPAND)
+        self.all_texts_sizer.Add(self.my_text_sizer, 1, wx.EXPAND)
+        self.all_texts_sizer.Add(self.other_text_sizer, 1, wx.EXPAND)
+        self.all_texts_sizer.Add(self.boxes, -1, wx.EXPAND)
+        self.main_sizer.Add(self.all_texts_sizer, 1, wx.EXPAND)
         self.main_sizer.Add(self.btn1, flag=wx.CENTER)
         self.SetupScrolling()
         self.SetSizer(self.main_sizer)
@@ -196,10 +208,10 @@ class TopPanel(scrolled.ScrolledPanel):
             if action[0] == "delete":
                 lines = action[-1].split("-")
                 #                self.add_lines -= int(lines[-1]) - int(lines[0]) - 1
-                add_lines -= int(lines[-1]) - int(lines[0]) + 1
+                add_lines -= int(lines[-1]) - int(lines[0])
                 del self.my_file_text[int(lines[0]) - 1:int(lines[-1])]
             elif action[0] == "change":
-                self.my_file_text[int(action[2]) + add_lines + 1] = self.other_file_text[int(action[-1])-1]
+                self.my_file_text[int(action[2]) + add_lines - 1] = self.other_file_text[int(action[-1]) - 1]
             else:
                 lines = action[2].split("-")
                 #                self.add_lines += int(lines[-1]) - int(lines[0]) + 1
@@ -209,7 +221,7 @@ class TopPanel(scrolled.ScrolledPanel):
                 for i in range(int(lines[-1]) - int(lines[0]) + 1):
                     self.my_file_text.insert(int(where_to_add) + add_lines + i,
                                              self.other_file_text[int(lines[0]) + i - 1])
-                add_lines += int(lines[-1]) - int(lines[0]) - 1
+                add_lines += int(lines[-1]) - int(lines[0])
         f = self.GetParent()
         f.Close()
 
@@ -330,34 +342,54 @@ class SignUp(wx.Panel):
         wx.Panel.__init__(self, parent=parent)
 
         self.SetSize((800, 600))
-        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        name_lbl = wx.StaticText(self, label="First and last name")
-        name_sizer.Add(name_lbl, 0, wx.ALL | wx.CENTER, 5)
+        self.name_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        name_lbl = wx.StaticText(self, label="First name")
+        self.name_sizer.Add(name_lbl, 0, wx.ALL | wx.CENTER, 5)
         self.name = wx.TextCtrl(self)
-        name_sizer.Add(self.name, 0, wx.ALL | wx.CENTER, 5)
-
+        self.name_sizer.Add(self.name, 0, wx.ALL | wx.CENTER, 5)
         user_sizer = wx.BoxSizer(wx.HORIZONTAL)
-
         user_lbl = wx.StaticText(self, label="Username:")
         user_sizer.Add(user_lbl, 0, wx.ALL | wx.CENTER, 5)
         self.user = wx.TextCtrl(self)
         user_sizer.Add(self.user, 0, wx.ALL | wx.CENTER, 5)
-
-        # pass info
         p_sizer = wx.BoxSizer(wx.HORIZONTAL)
-
         p_lbl = wx.StaticText(self, label="Password")
         p_sizer.Add(p_lbl, 0, wx.ALL | wx.CENTER, 5)
         self.password = wx.TextCtrl(self, style=wx.TE_PASSWORD | wx.TE_PROCESS_ENTER)
         p_sizer.Add(self.password, 0, wx.ALL | wx.CENTER, 5)
-
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.main_sizer.Add(name_sizer, 0, wx.ALL | wx.CENTER, 10)
+        self.main_sizer.Add(self.name_sizer, 0, wx.ALL | wx.CENTER, 10)
         self.main_sizer.Add(user_sizer, 0, wx.ALL | wx.CENTER, 10)
         self.main_sizer.Add(p_sizer, 0, wx.ALL | wx.CENTER, 10)
-        self.btn = wx.Button(self, label="Login")
+        self.btn = wx.Button(self, label="Sign Up")
         self.main_sizer.Add(self.btn, 0, wx.ALL | wx.CENTER, 10)
+
+    def check_sign_up(self):
+       if self.user.Value and self.name.Value and self.password.Value:
+           pass
+
+    def ValidUsername(self):
+        username = self.SignUpUserName.GetValue()
+        if username.isdigit():
+            return False
+        return True
+
+    def ValidFirstName(self):
+        if self.FirstName.GetValue() != '' and (self.FirstName.GetValue().isdigit() == False):
+            return True
+        return False
+
+    def ValidLastName(self):
+        if self.LastName.GetValue() != '' and not self.LastName.GetValue().isdigit():
+            return True
+        return False
+
+    def ValidPassword(self):
+        password = self.SignUpPassword.GetValue()
+        print(len(password))
+        if password.isdigit():
+            return False
+        return True
 
 
 class Program(wx.Frame):
@@ -448,9 +480,7 @@ class Program(wx.Frame):
     def show_home_page(self, event):  # checks from the sign up page if all the fields are filled and send the server
         # a message to create this new client and checks if this client wanted user name already exists if it does
         # show error if not calls the function in charge of showing the home page
-        if self.panel_three.user.Value and self.panel_three.name.Value and self.panel_three.password.Value:
-            self.user_name = self.panel_three.user.Value
-            self.home_page.print_name(self.panel_three.user.Value)
+        if self.panel_three.check_sign_up():
             msg = {"action": "w", "user_name": self.panel_three.user.Value,
                    "user_password": self.panel_three.password.Value}
             self.client.send_message(msg)
@@ -460,8 +490,10 @@ class Program(wx.Frame):
             else:
                 self.create_home_page(None)
         else:
-            print_answer("missing password or username or name")
             self.panel_one.Refresh()
+ #       if self.panel_three.user.Value and self.panel_three.name.Value and self.panel_three.password.Value:
+  #          self.user_name = self.panel_three.user.Value
+   #         self.home_page.print_name(self.panel_three.user.Value)
 
     def create_home_page(self, event):
         self.threads()

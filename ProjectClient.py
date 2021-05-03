@@ -11,7 +11,7 @@ class Client(object):
 
     def __init__(self):
         self.my_socket = socket.socket()
-        self.server_ip = "127.0.0.1"
+        self.server_ip = "172.16.1.9"
         self.server_port = 8080
         self.answer = None
         self.aes = Encryption_proj.AESEncryption()

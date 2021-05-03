@@ -272,6 +272,7 @@ class Template(wx.Panel):
         self.write_new_changes()
         self.frame.Destroy()
         self.frame = Window2(None)
+        self.frame.Bind(wx.EVT_CLOSE, self.re_open, self.frame)
 
     def write_new_changes(self):
         self.my_text.Clear()
@@ -287,7 +288,8 @@ class Template(wx.Panel):
         if os.path.exists(path):
             with open(path) as fobj:
                 for line in fobj:
-                    self.my_text.AppendText(line)
+                    if line != "\n":
+                        self.my_text.AppendText(line)
             self.lines = len(self.my_text.Value.split("\n"))
             threading.Thread(target=self.rcv_messages).start()
 

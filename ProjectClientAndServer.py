@@ -11,7 +11,7 @@ class ClientP2P(object):
 
     def __init__(self):
         self.my_socket = socket.socket()
-        self.server_ip = "127.0.0.1"
+        self.server_ip = "172.16.1.9"
         self.server_port = 8888
         self.answer = None
         self.run = True
@@ -66,7 +66,7 @@ class ServerP2P(object):
         self.file_rcv_class = RcvFile(self.client_sock, self.aes, self.key)
 
     def start_connection(self):
-        self.sock.bind(("0.0.0.0", self.port))
+        self.sock.bind(("172.16.1.40", self.port))
         self.sock.listen(1)
         self.client_sock, address = self.sock.accept()
         self.client_sock.send(pickle.dumps(self.public_key))

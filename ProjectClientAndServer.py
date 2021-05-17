@@ -11,7 +11,7 @@ class ClientP2P(object):
 
     def __init__(self):
         self.my_socket = socket.socket()
-        self.server_ip = "172.16.1.9"
+        self.server_ip = "127.0.0.1"
         self.server_port = 8888
         self.answer = None
         self.run = True
@@ -43,9 +43,14 @@ class ClientP2P(object):
 
     def send(self, data):
         self.my_socket.send(self.aes.encrypt_aes(data, self.key))
+        if data == "exit".encode():
+            self.my_socket.close()
 
     def send_file(self, file):
         self.file_send_class.send_file(file)
+
+    def close(self):
+        self.my_socket.close()
 
 
 class ServerP2P(object):
@@ -66,7 +71,7 @@ class ServerP2P(object):
         self.file_rcv_class = RcvFile(self.client_sock, self.aes, self.key)
 
     def start_connection(self):
-        self.sock.bind(("172.16.1.40", self.port))
+        self.sock.bind(("0.0.0.0", self.port))
         self.sock.listen(1)
         self.client_sock, address = self.sock.accept()
         self.client_sock.send(pickle.dumps(self.public_key))
@@ -79,12 +84,17 @@ class ServerP2P(object):
 
     def send(self, data):
         self.client_sock.send(self.aes.encrypt_aes(data, self.key))
+        if data == "exit".encode():
+            self.sock.close()
 
     def send_file(self, file):
         self.file_send_class.send_file(file)
 
     def rcv_file(self):
         self.file = self.file_rcv_class.rcv_file()
+
+    def close(self):
+        self.sock.close()
 
 
 class RcvFile(object):

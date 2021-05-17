@@ -42,13 +42,21 @@ class HomePage(wx.Panel):
         wx.Panel.__init__(self, parent)
         self.SetSize((800, 600))
         self.user_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.user = wx.TextCtrl(self, pos=(325, 100))
+        self.clients = []
+        self.user = None
+        self.target = wx.ComboBox(self, choices=self.clients, pos=(325, 100), style=wx.CB_READONLY)
+        self.target.Bind(wx.EVT_COMBOBOX, self.target_handler)
         self.connect = wx.Button(self, label="Start working", pos=(340, 130))
         self.path = None
+        self.me = None
 
     def print_name(self, name):
+        self.me = name
         font = wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
         wx.StaticText(self, -1, "hello " + name + " enter user name to work with", (200, 10), ).SetFont(font)
+
+    def target_handler(self, event):
+        self.user = self.target.GetValue()
 
 
 class TopPanel(scrolled.ScrolledPanel):
@@ -70,7 +78,7 @@ class TopPanel(scrolled.ScrolledPanel):
         font = wx.Font(25, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
         self.my_lbl = wx.StaticText(self, -1, style=wx.ALIGN_CENTER, label="Your File")
         self.my_lbl.SetFont(font)
-        self.other_lbl = wx.StaticText(self, -1, style=wx.ALIGN_CENTER, label="Other File")
+        self.other_lbl = wx.StaticText(self, -1, style=wx.ALIGN_CENTER)
         self.other_lbl.SetFont(font)
         self.btn1.Bind(wx.EVT_BUTTON, self.make_changes, self.btn1)
         # self.boxes = []
@@ -84,7 +92,7 @@ class TopPanel(scrolled.ScrolledPanel):
         self.my_file_text = None
         self.other_file_text = None
 
-    def write_file(self, my_file, other_file, lines):
+    def write_file(self, my_file, other_file, lines, file_lbl):
         my_file = my_file.split("\n")
         other_file = other_file.split("\n")
         counter = 0
@@ -95,7 +103,7 @@ class TopPanel(scrolled.ScrolledPanel):
         self.write_my_file(my_file)
         self.write_other_file(other_file)
         self.check_diff_lines()
-        self.make_window(lines)
+        self.make_window(lines, file_lbl)
         self.Refresh()
 
     def check_diff_lines(self):
@@ -166,7 +174,8 @@ class TopPanel(scrolled.ScrolledPanel):
         self.other_file.AppendText(str(counter) + ").   ")
         self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
 
-    def make_window(self, lines):
+    def make_window(self, lines, file_lbl):
+        self.other_lbl.SetLabel(file_lbl)
         self.my_file.SetMinSize((500, round(15.5 * lines)))
         self.other_file.SetMinSize((500, round(15.5 * lines)))
         self.my_text_sizer.Add(self.my_lbl, 1, wx.EXPAND)
@@ -233,8 +242,8 @@ class Window2(wx.Frame):
         wx.Frame.__init__(self, parent, -1, 'Window2', size=(1300, 600))
         self.top_panel = TopPanel(self)
 
-    def write(self, my_file, other_file, lines):
-        self.top_panel.write_file(my_file, other_file, lines)
+    def write(self, my_file, other_file, lines, file_lbl):
+        self.top_panel.write_file(my_file, other_file, lines, file_lbl)
         self.Maximize(True)
 
 
@@ -243,7 +252,7 @@ class Template(wx.Panel):
     This is the main editing page
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent,homepage):
         """
         in charge of the files page has all the files and file name for display for the user to choose the file he
         wants to download
@@ -251,10 +260,15 @@ class Template(wx.Panel):
         """
         wx.Panel.__init__(self, parent)
         self.SetSize((800, 600))
-        self.sync = wx.Button(self, wx.ID_CLEAR, "SYNC WORK", pos=(300, 540))
+        self.all_version = []
+        self.sync = wx.Button(self, wx.ID_CLEAR, "SYNC WORK", pos=(200, 540))
         self.my_text = wx.TextCtrl(self, size=(785, 540), style=wx.TE_MULTILINE | wx.TE_RICH)
+        self.exit = wx.Button(self, label='EXIT AND SAVE', pos=(300, 540))
+        self.target = wx.ComboBox(self, choices=self.all_version, pos=(425, 540), style=wx.CB_READONLY, size=(300,-1))
+        self.target.Bind(wx.EVT_COMBOBOX, self.version_handler)
         self.point = self.my_text.GetInsertionPoint()
         self.text = None
+        self.homepage = homepage
         self.line = self.my_text.PositionToXY(self.my_text.GetInsertionPoint())[2]
         self.client = None
         self.my_text.Bind(wx.EVT_CHAR, self.change_color, self.my_text)
@@ -264,6 +278,8 @@ class Template(wx.Panel):
         self.dlg = False
         self.lines = None
         self.other_lines = None
+        self.version = 0
+        self.path = None
         self.frame = Window2(None)
         self.frame.Bind(wx.EVT_CLOSE, self.re_open, self.frame)
 
@@ -284,7 +300,11 @@ class Template(wx.Panel):
         self.client.send_file(path)
 
     def open_file(self, path):
+        print("arad " + path)
+        self.path = path
         self.file = path
+        self.all_version.append(path)
+        self.target.SetItems(self.all_version)
         if os.path.exists(path):
             with open(path) as fobj:
                 for line in fobj:
@@ -295,34 +315,65 @@ class Template(wx.Panel):
 
     def sync_files(self, e):
         file = self.file.split("\\")
-        new_file = "last_updated_" + file[-1]
+        print(file)
+        self.version += 1
+        new_file = "version_" + str(self.version) + "_" + file[-1]
         file[-1] = new_file
         file = "\\".join(file)
+        self.all_version.append(file)
+        self.target.SetItems(self.all_version)
         self.last_updated_file = file
         with open(file, "w") as f:
             f.write(self.my_text.Value)
         self.client.send("@sync".encode())
 
-    def write_changes(self):
-        with open(self.client.file, "r")as f:
+    def save_version(self):
+        self.version += 1
+        file = self.file.split("\\")
+        file[-1] = "version_" + str(self.version) + "_" + file[-1]
+        file = "\\".join(file)
+        self.all_version.append(file)
+        self.target.SetItems(self.all_version)
+        with open(file, "w") as f:
+            f.write(self.my_text.Value)
+
+    def write_changes(self, file, file_lbl):
+        print(file)
+        with open(file if file else self.client.file, "r")as f:
             f2 = f.read()
         self.frame.Show()
         other_lines = len(f2.split("\n"))
-        self.frame.write(self.my_text.Value, f2, self.lines if self.lines > other_lines else other_lines)
+        self.frame.write(self.my_text.Value, f2, self.lines if self.lines > other_lines else other_lines, file_lbl)
+
+    def version_handler(self, event):
+        self.write_changes(self.target.GetValue(), "Old Version")
 
     def rcv_messages(self):
         while True:
-            request = self.client.rcv().decode()
+            try:
+                request = self.client.rcv().decode()
+            except OSError:
+                self.my_text.Clear()
+                print_answer("connection stopped because your partner stopped")
+                self.client.close()
+                with open("".join(self.path), "w") as f:
+                    f.write(self.my_text.Value)
+                self.Hide()
+                self.homepage.Show()
+                break
             if request:
                 if request == "@sync":
                     self.dlg = wx.MessageBox('want to sync your file?', 'TestDialog',
                                              wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
                     if self.dlg == wx.YES:
+                        self.save_version()
                         self.client.send("@yes sync".encode())
                         self.client.rcv_file()
-                        self.write_changes()
+                        self.write_changes(None, "Other File")
                 if request == "@yes sync":
                     self.client.send_file(self.last_updated_file)
+                if request == "exit":
+                    self.client.close()
 
     def rcv_file(self):
         self.client = ProjectClientAndServer.ClientP2P()
@@ -367,29 +418,29 @@ class SignUp(wx.Panel):
         self.main_sizer.Add(self.btn, 0, wx.ALL | wx.CENTER, 10)
 
     def check_sign_up(self):
-       if self.user.Value and self.name.Value and self.password.Value:
-           pass
+        if self.user.Value and self.name.Value and self.password.Value:
+            if self.valid_username():
+                return self.valid_password()
+        else:
+            print_answer("missing information")
 
-    def ValidUsername(self):
-        username = self.SignUpUserName.GetValue()
+    def valid_username(self):
+        username = self.user.GetValue()
         if username.isdigit():
+            print_answer("invalid username")
             return False
         return True
 
-    def ValidFirstName(self):
-        if self.FirstName.GetValue() != '' and (self.FirstName.GetValue().isdigit() == False):
-            return True
-        return False
-
-    def ValidLastName(self):
-        if self.LastName.GetValue() != '' and not self.LastName.GetValue().isdigit():
-            return True
-        return False
-
-    def ValidPassword(self):
-        password = self.SignUpPassword.GetValue()
-        print(len(password))
-        if password.isdigit():
+    def valid_password(self):
+        password = self.password.GetValue()
+        if len(password) < 8:
+            print_answer("password too short")
+            return False
+        elif password.isdigit():
+            print_answer("password can not be only numbers")
+            return False
+        elif password.isalpha():
+            print_answer("password can not be only string")
             return False
         return True
 
@@ -413,7 +464,7 @@ class Program(wx.Frame):
         self.panel_one = LogIn(self)
         self.home_page = HomePage(self)
         self.home_page.Hide()
-        self.template = Template(self)
+        self.template = Template(self,self.home_page)
         self.template.Hide()
         self.panel_three = SignUp(self)
         self.panel_three.Hide()
@@ -422,6 +473,7 @@ class Program(wx.Frame):
         # buttons at the panel was pressed and if was it will go the the function to show the correct panel
         self.sizer.Add(self.panel_three.main_sizer, 1, wx.EXPAND)
         self.panel_one.btn.Bind(wx.EVT_BUTTON, self.show_panel_two)
+        self.template.exit.Bind(wx.EVT_BUTTON, self.exit_and_save)
         self.panel_three.btn.Bind(wx.EVT_BUTTON, self.show_home_page)
         self.sizer.Add(self.home_page.user_sizer, 1, wx.EXPAND)
         self.home_page.connect.Bind(wx.EVT_BUTTON, self.show_template)
@@ -446,16 +498,22 @@ class Program(wx.Frame):
             return
 
         path = dialog.GetPath()
-        msg = {"action": "wc", "user_name": self.home_page.user.Value, "file_name": path}
+        msg = {"action": "wc", "user_name": self.home_page.user, "file_name": path,
+               "my_user_name": self.home_page.me}
         self.client.answer = None
         self.client.send_message(msg)
         while not self.client.answer:
             pass
-        if self.client.answer == "asked the client":
+        if self.client.answer == "yes":
+            print("answer")
+            msg = {"action": "work", "user_name": self.home_page.user, "file_name": path}
+            self.client.send_message(msg)
             self.home_page.Hide()
             self.template.Show()
             self.template.send_file(path)
             self.template.open_file(path)
+        else:
+            print_answer(self.home_page.user + " dose not want to work with you try a different user")
 
     def start_to_work(self):
         self.home_page.Hide()
@@ -490,12 +548,20 @@ class Program(wx.Frame):
             if self.client.answer == "no":
                 print_answer("username taken change username")
             else:
+                self.home_page.print_name(self.panel_three.user.Value)
                 self.create_home_page(None)
         else:
             self.panel_one.Refresh()
- #       if self.panel_three.user.Value and self.panel_three.name.Value and self.panel_three.password.Value:
-  #          self.user_name = self.panel_three.user.Value
-   #         self.home_page.print_name(self.panel_three.user.Value)
+
+    def exit_and_save(self, event):
+        self.template.my_text.Clear()
+        self.template.path = self.template.path.split("\\")
+        self.template.path[-1] = "final_version_" + self.template.path[-1]
+        with open("".join(self.template.path), "w") as f:
+            f.write(self.template.my_text.Value)
+        self.template.client.send("exit".encode())
+        self.template.Hide()
+        self.home_page.Show()
 
     def create_home_page(self, event):
         self.threads()
@@ -513,12 +579,25 @@ class Program(wx.Frame):
         while on:
             self.client.rcv_message()
             if "@" in self.client.answer:  # means some one wants me to send hi a file
+                dlg = wx.MessageBox(self.client.answer.split(" ")[-1] + ' wants to work with you', 'TestDialog',
+                                    wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+                if dlg == wx.YES:
+                    msg = {"action": "yes", "user_name": self.client.answer.split(" ")[-1]}
+                else:
+                    msg = {"action": "no", "user_name": self.client.answer.split(" ")[-1]}
+                self.client.send_message(msg)
+            if "lets start" in self.client.answer:
                 self.start_to_work()
                 while not self.client.answer:
                     pass
             if self.client.answer == "close client":  # stops the connection
                 self.client.my_socket.close()
                 on = False
+            if "&" in self.client.answer:
+                clients = self.client.answer.split()[1:]
+                if self.home_page.me in clients:
+                    clients.remove(self.home_page.me)
+                self.home_page.target.SetItems(clients)
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ USER_FILE = "data.db"
 FILE_DATABASE = "file_database.pickle"
 BUFFER_SIZE = 4096
 CLIENTS_SOCKET = {}  # global arg that has all the clients and there socket
+All_CLIENTS_NAMES = []
 
 
 class ClientHandler(threading.Thread):
@@ -33,7 +34,7 @@ class ClientHandler(threading.Thread):
     def run(self):
         self.sock.send(pickle.dumps(self.public_key))
         self.key = self.rsa.decode(self.sock.recv(1024))
-        global FILE_LIST, CLIENTS_SOCKET
+        global FILE_LIST, CLIENTS_SOCKET, All_CLIENTS_NAMES
         on = True
         while on:
             try:
@@ -57,6 +58,15 @@ class ClientHandler(threading.Thread):
                 else:
                     self.dict.write(msg["user_name"], msg["user_password"])
                     self.send_message("good")
+                    clients = "& " + " ".join(All_CLIENTS_NAMES)
+                    self.send_message(clients)
+                    print(clients)
+                    All_CLIENTS_NAMES.append(msg["user_name"])
+                    clients = "& " + " ".join(All_CLIENTS_NAMES)
+                    for client in CLIENTS_SOCKET:
+                        CLIENTS_SOCKET[client][0].send(
+                            self.aes.encrypt_aes(pickle.dumps(clients),
+                                                 CLIENTS_SOCKET[client][1]))
                     CLIENTS_SOCKET[msg["user_name"]] = (self.sock, self.key)
                     print(CLIENTS_SOCKET)
             elif msg["action"] == "c":  # checks if the action is to check if the password and user name that were
@@ -69,6 +79,16 @@ class ClientHandler(threading.Thread):
                     print(self.dict.answer)
                     if self.dict.answer:
                         self.send_message("good")
+                        clients = "& " + " ".join(All_CLIENTS_NAMES)
+                        self.send_message(clients)
+                        print(clients)
+                        All_CLIENTS_NAMES.append(msg["user_name"])
+                        clients = "& " + " ".join(All_CLIENTS_NAMES)
+                        for client in CLIENTS_SOCKET:
+                            print()
+                            CLIENTS_SOCKET[client][0].send(
+                                self.aes.encrypt_aes(pickle.dumps(clients),
+                                                     CLIENTS_SOCKET[client][1]))
                         CLIENTS_SOCKET[msg["user_name"]] = (self.sock, self.key)
                     else:
                         self.send_message("no")
@@ -78,11 +98,23 @@ class ClientHandler(threading.Thread):
                         self.send_message("your file")
                     else:
                         print(CLIENTS_SOCKET[msg["user_name"]][0])
-                        self.send_message("asked the client")
                         CLIENTS_SOCKET[msg["user_name"]][0].send(
-                            self.aes.encrypt_aes(pickle.dumps("@" + msg["file_name"]),
+                            self.aes.encrypt_aes(pickle.dumps("@ " + msg["my_user_name"]),
                                                  CLIENTS_SOCKET[msg["user_name"]][1]))  # sends the
                         # client that you want his file
+            elif msg["action"] == "yes":
+                print("araddddd")
+                CLIENTS_SOCKET[msg["user_name"]][0].send(
+                    self.aes.encrypt_aes(pickle.dumps("yes"),
+                                         CLIENTS_SOCKET[msg["user_name"]][1]))
+            elif msg["action"] == "no":
+                CLIENTS_SOCKET[msg["user_name"]][0].send(
+                    self.aes.encrypt_aes(pickle.dumps("no"),
+                                         CLIENTS_SOCKET[msg["user_name"]][1]))
+            elif msg["action"] == "work":
+                CLIENTS_SOCKET[msg["user_name"]][0].send(
+                    self.aes.encrypt_aes(pickle.dumps("lets start" + msg["file_name"]),
+                                         CLIENTS_SOCKET[msg["user_name"]][1]))
 
     def send_message(self, msg):
         self.sock.send(self.aes.encrypt_aes(pickle.dumps(msg), self.key))

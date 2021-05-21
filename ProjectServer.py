@@ -102,14 +102,10 @@ class ClientHandler(threading.Thread):
                             self.aes.encrypt_aes(pickle.dumps("@ " + msg["my_user_name"]),
                                                  CLIENTS_SOCKET[msg["user_name"]][1]))  # sends the
                         # client that you want his file
-            elif msg["action"] == "yes":
+            elif msg["action"] == "yes" or msg["action"] == "no":
                 print("araddddd")
                 CLIENTS_SOCKET[msg["user_name"]][0].send(
-                    self.aes.encrypt_aes(pickle.dumps("yes"),
-                                         CLIENTS_SOCKET[msg["user_name"]][1]))
-            elif msg["action"] == "no":
-                CLIENTS_SOCKET[msg["user_name"]][0].send(
-                    self.aes.encrypt_aes(pickle.dumps("no"),
+                    self.aes.encrypt_aes(pickle.dumps(msg["action"]),
                                          CLIENTS_SOCKET[msg["user_name"]][1]))
             elif msg["action"] == "work":
                 CLIENTS_SOCKET[msg["user_name"]][0].send(

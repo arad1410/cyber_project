@@ -15,7 +15,6 @@ class FileCmp(object):
     def main_cmp(self):
         self.deleted_lines = []
         self.other_deleted_lines = []
-        same = False
         while self.my_index < len(self.my_file):
             my_line = self.my_file[self.my_index]
             other_line = self.other_file[self.other_index]

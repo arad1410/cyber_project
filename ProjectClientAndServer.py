@@ -10,25 +10,22 @@ BUFFER_SIZE = 4096
 class ClientP2P(object):
 
     def __init__(self):
-        self.my_socket = socket.socket()
-        self.server_ip = "127.0.0.1"
-        self.server_port = 8888
-        self.answer = None
-        self.run = True
-        self.aes = Encryption_proj.AESEncryption()
-        self.rsa = Encryption_proj.RSACrypt()
-        self.key = self.aes.key
-        self.file_send_class = SendFile(self.my_socket, self.aes, self.key)
-        self.file_rcv_class = RcvFile(self.my_socket, self.aes, self.key)
-        self.file = None
-        self.sending = None
+        self.my_socket = socket.socket()  # socket object
+        self.server_ip = "127.0.0.1"  # server ip
+        self.server_port = 8888  # connection port
+        self.aes = Encryption_proj.AESEncryption()  # AES object
+        self.rsa = Encryption_proj.RSACrypt()  # RSA object
+        self.key = self.aes.key  # aes private key
+        self.file_send_class = SendFile(self.my_socket, self.aes, self.key)  # send file object
+        self.file_rcv_class = RcvFile(self.my_socket, self.aes, self.key)  # rcv file object
+        self.file = None  # holds file that was received
         self.start_connection()
 
     def start_connection(self):
-        while self.run:  # waits until the connection was successful
+        while True:  # waits until the connection was successful
             try:
                 self.my_socket.connect((self.server_ip, self.server_port))
-                self.run = False
+                break
             except socket.error:
                 pass
         self.rsa.public_key = pickle.loads(self.my_socket.recv(1024))
@@ -55,20 +52,18 @@ class ClientP2P(object):
 
 class ServerP2P(object):
     def __init__(self, file):
-        self.sock = socket.socket()
-        self.port = 8888
-        self.file = file
-        self.client_sock = None
-        self.sending = None
-        self.rsa = Encryption_proj.RSACrypt()
+        self.sock = socket.socket()  # socket object
+        self.port = 8888  # holds the connection port
+        self.file = file  # holds the file to send to the client
+        self.client_sock = None  # clients socket
+        self.rsa = Encryption_proj.RSACrypt()  # rsa object
         self.rsa.create_public_key()
-        self.answer = None
-        self.public_key = self.rsa.public_key
-        self.aes = Encryption_proj.AESEncryption()
-        self.key = None
+        self.public_key = self.rsa.public_key  # holds rsa public key
+        self.aes = Encryption_proj.AESEncryption()  # aes object
+        self.key = None  # will hold the client aes key
         self.start_connection()
-        self.file_send_class = SendFile(self.client_sock, self.aes, self.key)
-        self.file_rcv_class = RcvFile(self.client_sock, self.aes, self.key)
+        self.file_send_class = SendFile(self.client_sock, self.aes, self.key)  # send file object
+        self.file_rcv_class = RcvFile(self.client_sock, self.aes, self.key)  # rcv file object
 
     def start_connection(self):
         self.sock.bind(("0.0.0.0", self.port))
@@ -76,8 +71,6 @@ class ServerP2P(object):
         self.client_sock, address = self.sock.accept()
         self.client_sock.send(pickle.dumps(self.public_key))
         self.key = self.rsa.decode(self.client_sock.recv(1024))
-
-    #        self.send_file(self.file)
 
     def rcv(self):
         return self.aes.decrypt_aes(self.client_sock.recv(1024), self.key)
@@ -99,9 +92,9 @@ class ServerP2P(object):
 
 class RcvFile(object):
     def __init__(self, sock, aes, key):
-        self.sock = sock
-        self.key = key
-        self.aes = aes
+        self.sock = sock  # the socket you will rcv the file on
+        self.key = key  # holds the aes key
+        self.aes = aes  # holds the aes object
 
     def rcv_file(self):
         answer = pickle.loads(self.sock.recv(1024))
@@ -121,10 +114,9 @@ class RcvFile(object):
 
 class SendFile(object):
     def __init__(self, sock, aes, key):
-        self.answer = None
-        self.sock = sock
-        self.aes = aes
-        self.key = key
+        self.sock = sock  # the socket you will send the file on
+        self.aes = aes  # the aes object
+        self.key = key  # the aes private key
 
     def send_file(self, file):
         with open(file, "rb") as f:

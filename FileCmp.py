@@ -1,16 +1,13 @@
 class FileCmp(object):
     def __init__(self, my_file, other_file):
-        self.my_file = my_file
-        self.other_file = other_file
-        self.diff_other_file = {}
-        self.diff_my_file = {}
-        self.diff_my_lines = []
-        self.diff_other_lines = []
-        self.chang_rate = 2 / 3
-        self.other_index = 0
-        self.my_index = 0
-        self.deleted_lines = []
-        self.other_deleted_lines = []
+        self.my_file = my_file  # holds my file
+        self.other_file = other_file  # holds the others file
+        self.diff_my_lines = []  # holds all the different lines in my text
+        self.diff_other_lines = []  # holds all the different lines in the other text
+        self.other_index = 0  # other text line index
+        self.my_index = 0  # my text line index
+        self.deleted_lines = []  # all the lines i deleted
+        self.other_deleted_lines = []  # all the other user deleted
 
     def main_cmp(self):
         self.deleted_lines = []
@@ -27,8 +24,6 @@ class FileCmp(object):
                     self.other_index = self.other_index - 1
                     self.my_index = self.my_index - 1
             else:
-                self.diff_other_file[self.other_index] = -1
-                self.diff_my_file[self.my_index] = -1
                 self.my_index += 1
                 self.other_index += 1
         print(self.deleted_lines)

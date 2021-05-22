@@ -6,25 +6,20 @@ import tqdm
 import os
 import Encryption_proj
 
-FILE_LIST = {}
-FILES = "server_files\\"
-USER_FILE = "data.db"
-FILE_DATABASE = "file_database.pickle"
+DATABASE = "data.db"  # holds all the clients
 BUFFER_SIZE = 4096
 CLIENTS_SOCKET = {}  # global arg that has all the clients and there socket
-All_CLIENTS_NAMES = []
+All_CLIENTS_NAMES = []  # names of all the clients
 
 
 class ClientHandler(threading.Thread):
     def __init__(self, address, sock):
         super(ClientHandler, self).__init__()
-        global FILE_LIST, USER_FILE
+        global DATABASE
         self.sock = sock
         self._name = address
-        self.dict = database.SyncDataBase(USER_FILE)  # creates a dictionary with all the user name and password
-        self.file_dict = database.SyncDataBase(FILE_DATABASE)  # creates a dictionary with all the files and their
+        self.dict = database.SyncDataBase(DATABASE)  # creates a dictionary with all the user name and password
         # client
-        FILE_LIST = self.file_dict.dict.dict  # creates global arg so all te clients wii have the same file list
         self.rsa = Encryption_proj.RSACrypt()
         self.rsa.create_public_key()
         self.public_key = self.rsa.public_key
@@ -34,7 +29,7 @@ class ClientHandler(threading.Thread):
     def run(self):
         self.sock.send(pickle.dumps(self.public_key))
         self.key = self.rsa.decode(self.sock.recv(1024))
-        global FILE_LIST, CLIENTS_SOCKET, All_CLIENTS_NAMES
+        global  CLIENTS_SOCKET, All_CLIENTS_NAMES
         on = True
         while on:
             try:
@@ -51,7 +46,7 @@ class ClientHandler(threading.Thread):
                 self.send_message("close client")
                 self.sock.close()
             elif msg["action"] == "w":  # checks if the action is to write a new client that wants to join
-                self.dict = database.SyncDataBase(USER_FILE)
+                self.dict = database.SyncDataBase(DATABASE)
                 self.dict.check(msg["user_name"])  # checks if the user name already exists
                 if self.dict.answer:
                     self.send_message("no")

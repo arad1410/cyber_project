@@ -205,7 +205,6 @@ class FileCmpPanel(scrolled.ScrolledPanel):
             if action[0] == "delete":
                 lines = action[-1].split("-")
                 if add_lines != 0:
-                    print("fuck")
                     add_lines -= int(lines[-1]) - int(lines[0]) + 1
                     del self.my_file_text[int(lines[0]) + add_lines+1:int(lines[-1]) + add_lines + 2]
                 else:

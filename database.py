@@ -1,5 +1,4 @@
 import threading
-import pickle
 import _sqlite3
 import hashlib
 
@@ -12,25 +11,10 @@ class Dict(object):
         self.conn = _sqlite3.connect("data.db", check_same_thread=False)
         self.cur = self.conn.cursor()
         self.dict = None
-        # while True:
-        #    try:
-
-    #         with open(self.file, "rb") as file:
-    #              self.dict = {}
-    #               file = pickle.load(file)
-    #                self.dict = file
-    #                 break
-    #          except EOFError:
-    #               break
 
     def insert(self, key, value):
         self.cur.execute("INSERT INTO users VALUES (?,?,?)", (key, hashlib.sha256(value.encode()).hexdigest(), "a"))
         self.conn.commit()
-        # self.dict
-        # self.dict[key] = value
-        # self.dict
-        # with open(self.file, "wb") as file:
-        #   pickle.dump(self.dict, file)
 
     def remove_key(self, key):
         if self.check_key(key):

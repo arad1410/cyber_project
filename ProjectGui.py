@@ -32,7 +32,7 @@ class LogIn(wx.Panel):
 
 class HomePage(wx.Panel):
 
-    # in charge to create the home page panel and to upload the file name or the file itself
+    # in charge to create the home page panel to chose the person you want to work and the file you want to work on
 
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -46,16 +46,17 @@ class HomePage(wx.Panel):
         self.user_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.target.Bind(wx.EVT_COMBOBOX, self.target_handler)
 
-    def print_name(self, name):
+    def print_name(self, name):  # prints the name of the user
         self.me = name
         font = wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
         wx.StaticText(self, -1, "hello " + name + " enter user name to work with", (200, 10), ).SetFont(font)
 
-    def target_handler(self, event):
+    def target_handler(self, event):  # saves the person that's was chosen to work with
         self.user = self.target.GetValue()
 
 
 class FileCmpPanel(scrolled.ScrolledPanel):
+    # the panel that is in charge of showing the difference between the files and compares them with the file cmp file
 
     def __init__(self, parent):
         scrolled.ScrolledPanel.__init__(self, parent, -1)
@@ -86,29 +87,33 @@ class FileCmpPanel(scrolled.ScrolledPanel):
         font = wx.Font(25, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
         self.my_lbl.SetFont(font)
         self.other_lbl.SetFont(font)
-        self.btn1.Bind(wx.EVT_BUTTON, self.make_changes, self.btn1)
+        self.btn1.Bind(wx.EVT_BUTTON, self.make_changes, self.btn1)  # in charge of checking if the button was pressed
 
     def write_file(self, my_file, other_file, lines, file_lbl):
+        # starts the file compare and shows the differences
         my_file = my_file.split("\n")
         other_file = other_file.split("\n")
         counter = 0
         self.other_file_text = other_file
         self.my_file_text = my_file
-        self.file_cmp = FileCmp.FileCmp(my_file, other_file)
+        self.file_cmp = FileCmp.FileCmp(my_file, other_file)  # compares the files
         self.file_cmp.main_cmp()
-        self.write_my_file(my_file)
-        self.write_other_file(other_file)
-        self.check_diff_lines()
-        self.make_window(lines, file_lbl)
+        self.write_my_file(my_file)  # writes my file with my differences
+        self.write_other_file(other_file)  # writes the others file with his differences
+        self.check_diff_lines()  # checks all the lines that are different from one an other
+        self.make_window(lines, file_lbl)  # makes the window
         self.Refresh()
 
     def check_diff_lines(self):
+        # checks what lines are different and need to be added to the self.organize_box list
         for i in range(len(self.file_cmp.diff_my_lines)):
             self.organize_box.append(
                 "change line " + str(self.file_cmp.diff_other_lines[i]) + " with " + str(
                     self.file_cmp.diff_my_lines[i]))
 
     def write_my_file(self, my_file):
+        # writes my file with the color for each change blue for deleted lines and added lines and
+        # red for lines that are different
         other_deleted_lines = []
         for i in self.file_cmp.other_deleted_lines:
             self.organize_box.append("delete lines " + str(i[0]) + "-" + str(i[-1]))
@@ -131,6 +136,8 @@ class FileCmpPanel(scrolled.ScrolledPanel):
                 self.my_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
 
     def write_other_file(self, my_file):
+        # writes the others file with the color for each change blue for deleted lines and added lines and
+        # red for lines that are different
         my_deleted_lines = []
         for i in self.file_cmp.deleted_lines:
             self.organize_box.append("add lines " + str(i[1]) + "-" + str(i[-1]) + " at line " + str(i[0] - 1))
@@ -154,6 +161,7 @@ class FileCmpPanel(scrolled.ScrolledPanel):
                 self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
 
     def my_line_number(self, color, counter):
+        # writes the line number
         self.my_file.SetStyle(0, -1, wx.TextAttr(color))
         self.my_file.AppendText(str(counter) + ").   ")
         self.my_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
@@ -164,6 +172,8 @@ class FileCmpPanel(scrolled.ScrolledPanel):
         self.other_file.SetStyle(0, -1, wx.TextAttr(wx.BLACK))
 
     def make_window(self, lines, file_lbl):
+        # in charge of building the window with the files and the list of the
+        # differences the client can choose to implement
         self.other_lbl.SetLabel(file_lbl)
         self.my_file.SetMinSize((500, round(15.5 * lines)))
         self.other_file.SetMinSize((500, round(15.5 * lines)))
@@ -182,6 +192,7 @@ class FileCmpPanel(scrolled.ScrolledPanel):
         self.Refresh()
 
     def organize_box_list(self):
+        # organizes the box list sp it will be from first to last
         self.organize_box.sort(key=self.sort_key)
         for box in self.organize_box:
             self.boxes.Append(box)
@@ -198,26 +209,23 @@ class FileCmpPanel(scrolled.ScrolledPanel):
             return int(lines[0])
 
     def make_changes(self, e):
+        # in charge to make all the changes that the client wanted to change
         add_lines = 0
         for box in self.boxes.GetCheckedStrings():
-            print(box)
             action = box.split()
-            if action[0] == "delete":
+            if action[0] == "delete":  # in charge to delete the lines that were asked to
                 lines = action[-1].split("-")
                 if add_lines != 0:
                     add_lines -= int(lines[-1]) - int(lines[0]) + 1
-                    del self.my_file_text[int(lines[0]) + add_lines+1:int(lines[-1]) + add_lines + 2]
+                    del self.my_file_text[int(lines[0]) + add_lines + 1:int(lines[-1]) + add_lines + 2]
                 else:
                     add_lines -= int(lines[-1]) - int(lines[0]) + 1
                     del self.my_file_text[int(lines[0]) - 1:int(lines[-1])]
-                print([int(lines[0]) - 1 + add_lines, int(lines[-1])+add_lines])
-            elif action[0] == "change":
-                self.my_file_text[int(action[2]) + add_lines -1] = self.other_file_text[int(action[-1]) - 1]
-            else:
+            elif action[0] == "change":  # changes my line with the others line
+                self.my_file_text[int(action[2]) + add_lines - 1] = self.other_file_text[int(action[-1]) - 1]
+            else:  # adds the lines that were missed
                 lines = action[2].split("-")
                 where_to_add = action[-1]
-                print(lines)
-                print(where_to_add)
                 for i in range(int(lines[-1]) - int(lines[0]) + 1):
                     self.my_file_text.insert(int(where_to_add) + add_lines + i,
                                              self.other_file_text[int(lines[0]) + i - 1])
@@ -226,7 +234,7 @@ class FileCmpPanel(scrolled.ScrolledPanel):
         f.Close()
 
 
-class FileCmpFrame(wx.Frame):
+class FileCmpFrame(wx.Frame):  # builds the frame of the filecmp window
     title = "new Window"
 
     def __init__(self, parent):
@@ -238,17 +246,10 @@ class FileCmpFrame(wx.Frame):
         self.Maximize(True)
 
 
-class FilePanel(wx.Panel):
-    """
-    This is the main editing page
-    """
+class FilePanel(wx.Panel):  # build the window of the file and gives the choice to sync files or save the
+    # current version or compare old versions
 
     def __init__(self, parent, homepage):
-        """
-        in charge of the files page has all the files and file name for display for the user to choose the file he
-        wants to download
-        :param parent: string
-        """
         wx.Panel.__init__(self, parent)
         self.SetSize((800, 600))
         self.all_version = []  # holds all the version of my file
@@ -270,29 +271,29 @@ class FilePanel(wx.Panel):
         self.version = 0  # golds the number version we are at
         self.path = None  # holds the file path
         self.frame = FileCmpFrame(None)  # holds the object of FileCmpFrame
-        self.frame.Bind(wx.EVT_CLOSE, self.re_open, self.frame)
-        self.my_text.Bind(wx.EVT_CHAR, self.change_color, self.my_text)
+        self.frame.Bind(wx.EVT_CLOSE, self.re_open, self.frame)  # checks if the exit button was pressed
+        self.my_text.Bind(wx.EVT_CHAR, self.change_color, self.my_text)  # checks if a char was added to the text
         self.sync.Bind(wx.EVT_BUTTON, self.sync_files)
         self.target.Bind(wx.EVT_COMBOBOX, self.version_handler)
 
     def re_open(self, e):
-        print("hi")
+        # make the filecmp object again
         self.write_new_changes()
         self.frame.Destroy()
         self.frame = FileCmpFrame(None)
         self.frame.Bind(wx.EVT_CLOSE, self.re_open, self.frame)
 
-    def write_new_changes(self):
+    def write_new_changes(self):  # writes the changes
         self.my_text.Clear()
         self.my_text.WriteText("\n".join(self.frame.top_panel.my_file_text))
 
-    def send_file(self, path):
+    def send_file(self, path):  # sends the file to the other person after starting the p2p connection as the server
         self.file = path
         self.client = ProjectClientAndServer.ServerP2P(path)
         self.client.send_file(path)
 
     def open_file(self, path):
-        print("arad " + path)
+        # opens the file and writes it on the window
         self.path = path
         self.file = path
         self.all_version.append(path)
@@ -306,8 +307,8 @@ class FilePanel(wx.Panel):
             threading.Thread(target=self.rcv_messages).start()
 
     def sync_files(self, e):
+        # saves the current version of the file and send it to the other client
         file = self.file.split("\\")
-        print(file)
         self.version += 1
         new_file = "version_" + str(self.version) + "_" + file[-1]
         file[-1] = new_file
@@ -320,6 +321,7 @@ class FilePanel(wx.Panel):
         self.client.send("@sync".encode())
 
     def save_version(self):
+        # ones the person agreed to sync the files his current file is saved
         self.version += 1
         file = self.file.split("\\")
         file[-1] = "version_" + str(self.version) + "_" + file[-1]
@@ -330,7 +332,7 @@ class FilePanel(wx.Panel):
             f.write(self.my_text.Value)
 
     def write_changes(self, file, file_lbl):
-        print(file)
+        # starts the file compare
         with open(file if file else self.client.file, "r")as f:
             f2 = f.read()
         self.frame.Show()
@@ -341,13 +343,14 @@ class FilePanel(wx.Panel):
         self.write_changes(self.target.GetValue(), "Old Version")
 
     def rcv_messages(self):
+        # in charge of getting all the messages from the server and acts by it response
         while True:
             try:
                 request = self.client.rcv().decode()
-            except OSError:
+            except OSError:  # means the other client has closed the connection so it closes the window
+                # and stops the conectoin
                 print_answer("connection stopped because your partner stopped")
                 self.client.close()
-                print(self.my_text.Value)
                 with open("".join(self.path), "w") as f:
                     f.write(self.my_text.Value)
                 self.my_text.Clear()
@@ -368,11 +371,12 @@ class FilePanel(wx.Panel):
                 if request == "exit":
                     self.client.close()
 
-    def rcv_file(self):
+    def rcv_file(self):  # in charges of starting the p2p connection as the client and receiving the file
         self.client = ProjectClientAndServer.ClientP2P()
         self.open_file(self.client.file)
 
     def change_color(self, e):
+        # changes color if a character was added and something changed
         if self.line == self.my_text.PositionToXY(self.my_text.GetInsertionPoint())[2]:
             self.text += chr(e.GetKeyCode())
         else:
@@ -383,7 +387,7 @@ class FilePanel(wx.Panel):
 
 
 class SignUp(wx.Panel):
-    # in charge of thr sing up page for new clients gets all their details to start there new client
+    # in charge of thr sign up page for new clients gets all their details to start there new client
     def __init__(self, parent):
         wx.Panel.__init__(self, parent=parent)
 
@@ -411,6 +415,7 @@ class SignUp(wx.Panel):
         self.main_sizer.Add(self.btn, 0, wx.ALL | wx.CENTER, 10)
 
     def check_sign_up(self):
+        # checks if all the values are correct
         if self.user.Value and self.name.Value and self.password.Value:
             if self.valid_username():
                 return self.valid_password()
@@ -418,6 +423,7 @@ class SignUp(wx.Panel):
             print_answer("missing information")
 
     def valid_username(self):
+        # checks if the username is valid
         username = self.user.GetValue()
         if username.isdigit():
             print_answer("invalid username")
@@ -425,6 +431,7 @@ class SignUp(wx.Panel):
         return True
 
     def valid_password(self):
+        # checks if the password is valid
         password = self.password.GetValue()
         if len(password) < 8:
             print_answer("password too short")
@@ -476,6 +483,7 @@ class Program(wx.Frame):
         self.Layout()
 
     def show_FilePanel(self, event):
+        # chooses the file to work on and sends the request to the other person that was chosen to work together
         wildcard = "TXT files (*.txt)|*.txt"
         dialog = wx.FileDialog(self, "Open Text Files", wildcard=wildcard,
                                style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
@@ -490,7 +498,6 @@ class Program(wx.Frame):
         while not self.client.answer:
             pass
         if self.client.answer == "yes":
-            print("answer")
             msg = {"action": "work", "user_name": self.home_page.user, "file_name": path}
             self.client.send_message(msg)
             self.home_page.Hide()
@@ -500,7 +507,7 @@ class Program(wx.Frame):
         else:
             print_answer(self.home_page.user + " dose not want to work with you try a different user")
 
-    def start_to_work(self):
+    def start_to_work(self):  # starts to work with the other client and receives his fil
         self.home_page.Hide()
         self.file_panel.Show()
         self.file_panel.rcv_file()
@@ -521,9 +528,7 @@ class Program(wx.Frame):
             print_answer("missing password or username")
             self.log_in_panel.Refresh()
 
-    def check_sign_up(self, event):  # checks from the sign up page if all the fields are filled and send the server
-        # a message to create this new client and checks if this client wanted user name already exists if it does
-        # show error if not calls the function in charge of showing the home page
+    def check_sign_up(self, event):  # checks if all the fields are  filled up correctly
         if self.sign_up_panel.check_sign_up():
             msg = {"action": "w", "user_name": self.sign_up_panel.user.Value,
                    "user_password": self.sign_up_panel.password.Value}
@@ -537,7 +542,7 @@ class Program(wx.Frame):
         else:
             self.log_in_panel.Refresh()
 
-    def exit_and_save(self, event):
+    def exit_and_save(self, event):  # exits the p2p connection and save the current version
         self.file_panel.my_text.Clear()
         self.file_panel.path = self.file_panel.path.split("\\")
         self.file_panel.path[-1] = "final_version_" + self.file_panel.path[-1]
@@ -547,7 +552,7 @@ class Program(wx.Frame):
         self.file_panel.Hide()
         self.home_page.Show()
 
-    def create_home_page(self, event):
+    def create_home_page(self, event):  # creates the homepage
         self.threads()
         self.sign_up_panel.Hide()
         self.log_in_panel.Hide()
@@ -558,7 +563,7 @@ class Program(wx.Frame):
         self.recvThread = threading.Thread(target=self.rcv_message)
         self.recvThread.start()
 
-    def rcv_message(self):
+    def rcv_message(self):  # in charge of listening to the server
         on = True
         while on:
             self.client.rcv_message()
@@ -582,6 +587,7 @@ class Program(wx.Frame):
                 if self.home_page.me in clients:
                     clients.remove(self.home_page.me)
                 self.home_page.target.SetItems(clients)
+
 
 if __name__ == "__main__":
     app = wx.App(False)

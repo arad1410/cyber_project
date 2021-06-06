@@ -1,4 +1,5 @@
 class FileCmp(object):
+    # in charge of comparing thr files and show all the changes
     def __init__(self, my_file, other_file):
         self.my_file = my_file  # holds my file
         self.other_file = other_file  # holds the others file
@@ -10,6 +11,7 @@ class FileCmp(object):
         self.other_deleted_lines = []  # all the other user deleted
 
     def main_cmp(self):
+        # the main loop that compares a line from one file to the other
         self.deleted_lines = []
         self.other_deleted_lines = []
         while self.my_index < len(self.my_file):
@@ -17,8 +19,8 @@ class FileCmp(object):
             other_line = self.other_file[self.other_index]
             if my_line != other_line:
                 if self.check_other_deleted_lines(other_line) == self.check_my_deleted_lines(my_line) == False:
-                    print(self.check_other_deleted_lines(other_line))
-                    print(self.check_my_deleted_lines(my_line))
+                    self.check_other_deleted_lines(other_line)
+                    self.check_my_deleted_lines(my_line)
                     self.diff_other_lines.append(self.my_index - 1)
                     self.diff_my_lines.append(self.other_index - 1)
                     self.other_index = self.other_index - 1
@@ -26,12 +28,9 @@ class FileCmp(object):
             else:
                 self.my_index += 1
                 self.other_index += 1
-        print(self.deleted_lines)
-        print(self.other_deleted_lines)
-        print(self.diff_my_lines)
-        print(self.diff_other_lines)
 
     def check_my_deleted_lines(self, my_line):
+        # checks if there any lines in my file that are messing from the others file
         deleted_lines = [self.my_index]
         counter = self.other_index
         self.other_index += 1
@@ -51,6 +50,7 @@ class FileCmp(object):
         return True
 
     def check_other_deleted_lines(self, other_line):
+        # checks if there any lines in the others file that are messing from my file
         deleted_lines = []
         counter = self.my_index
         self.my_index += 1

@@ -8,7 +8,7 @@ BUFFER_SIZE = 4096
 
 
 class ClientP2P(object):
-
+    # creates the p2p client and talks to the client on the socket
     def __init__(self):
         self.my_socket = socket.socket()  # socket object
         self.server_ip = "127.0.0.1"  # server ip
@@ -29,6 +29,7 @@ class ClientP2P(object):
             except socket.error:
                 pass
         self.rsa.public_key = pickle.loads(self.my_socket.recv(1024))
+        # gets the clients private key for the AES encryption
         self.my_socket.send(self.rsa.encrypt(self.key))
         self.rcv_file()
 
@@ -39,6 +40,7 @@ class ClientP2P(object):
         return self.aes.decrypt_aes(self.my_socket.recv(1024), self.key)
 
     def send(self, data):
+        # sends the data and when he send exit closes the connection
         self.my_socket.send(self.aes.encrypt_aes(data, self.key))
         if data == "exit".encode():
             self.my_socket.close()
@@ -51,6 +53,7 @@ class ClientP2P(object):
 
 
 class ServerP2P(object):
+    # creates the p2p server and talks to the client on the socket
     def __init__(self, file):
         self.sock = socket.socket()  # socket object
         self.port = 8888  # holds the connection port
@@ -76,6 +79,7 @@ class ServerP2P(object):
         return self.aes.decrypt_aes(self.client_sock.recv(1024), self.key)
 
     def send(self, data):
+        # sends the data and when he send exit closes the connection
         self.client_sock.send(self.aes.encrypt_aes(data, self.key))
         if data == "exit".encode():
             self.sock.close()
@@ -91,12 +95,15 @@ class ServerP2P(object):
 
 
 class RcvFile(object):
+    # rcv the file from the other user
     def __init__(self, sock, aes, key):
         self.sock = sock  # the socket you will rcv the file on
         self.key = key  # holds the aes key
         self.aes = aes  # holds the aes object
 
     def rcv_file(self):
+        # gets the file file from the other person and when he sees the done sending
+        # has arrived the client has the full file and removes the done sending and saves the file
         answer = pickle.loads(self.sock.recv(1024))
         answer = answer.split(" ", 1)
         answer[1] = answer[1].split("\\")[-1]
@@ -113,19 +120,22 @@ class RcvFile(object):
 
 
 class SendFile(object):
+    # sends the file to the other user
     def __init__(self, sock, aes, key):
         self.sock = sock  # the socket you will send the file on
         self.aes = aes  # the aes object
         self.key = key  # the aes private key
 
     def send_file(self, file):
+        # sends the file with done sending at the end so that the other client
+        # will now when the client has sent the whole file
         with open(file, "rb") as f:
             f = f.read()
             f = self.aes.encrypt_aes(f, self.key)
             f += "done sending".encode()
         self.sock.send(pickle.dumps(str(os.path.getsize(file)) + " " + file))
         progress = tqdm.tqdm(range(os.path.getsize(file)), f"Sending {file}", unit="B", unit_scale=True,
-                             unit_divisor=1024)
+                             unit_divisor=1024, disable=True)
         counter = 0
         for _ in progress:
             # read the bytes from the file

@@ -6,6 +6,7 @@ MAX_READER = 10
 
 
 class Dict(object):
+    # ib charge of talking to the database and getting the information from it
     def __init__(self, file):
         self.file = file
         self.conn = _sqlite3.connect("data.db", check_same_thread=False)
@@ -13,21 +14,18 @@ class Dict(object):
         self.dict = None
 
     def insert(self, key, value):
+        # in charge of inserting to the database
         self.cur.execute("INSERT INTO users VALUES (?,?,?)", (key, hashlib.sha256(value.encode()).hexdigest(), "a"))
         self.conn.commit()
 
-    def remove_key(self, key):
-        if self.check_key(key):
-            del self.dict[key]
-        else:
-            print("no such key")
-
     def get_value(self, key, value):
+        # gets the value of the key that's was used (the username)
         self.cur.execute("SELECT * from users WHERE username = (?) AND password = (?) ",
                          (key, hashlib.sha256(value.encode()).hexdigest()))
         return True if self.cur.fetchall() else False
 
     def check_key(self, key):
+        # checks if specific key exists at the database
         self.cur.execute("SELECT * from users WHERE username = (?) ", (key,))
         return True if self.cur.fetchall() else False
         # return key in self.dict
